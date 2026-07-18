@@ -214,6 +214,17 @@ public class PaymentService {
 1. Khách hàng thanh toán thành công ➜ Stripe gửi thông báo không đồng bộ sự kiện `checkout.session.completed` về endpoint Webhook của bạn.
 2. Backend nhận Webhook ➜ Đọc ra `Session ID` (hoặc `clientReferenceId`) ➜ Tìm bản ghi `Payment` tương ứng trong DB ➜ Cập nhật `Payment` và `Order` sang trạng thái `SUCCESS/PAID`.
 
+## 🖥️ Giao diện người dùng (Thymeleaf Frontend)
+
+Dự án tích hợp sẵn giao diện mua hàng và thanh toán trực quan sử dụng **Thymeleaf** với luồng chuyển hướng hoàn chỉnh:
+* **Trang chủ cửa hàng (`/`):** Hiển thị danh sách sản phẩm nổi bật với ảnh, tên, giá bán. Có nút **Xem chi tiết** sản phẩm và nút **Thêm vào giỏ**. Trên Header có biểu tượng giỏ hàng hiển thị số lượng (click vào sẽ chuyển tới trang Checkout).
+* **Trang chi tiết sản phẩm (`/products/{id}`):** Hiển thị mô tả, hình ảnh của một sản phẩm cụ thể. Người dùng có thể nhấn **Mua ngay** để chuyển thẳng tới trang Checkout hoặc **Thêm vào giỏ** để tiếp tục chọn thêm sản phẩm khác.
+* **Trang thanh toán đơn hàng (`/checkout`):** Hiển thị danh sách sản phẩm đang có trong giỏ hàng, cho phép tăng/giảm số lượng, xóa sản phẩm, chọn loại tiền tệ thanh toán (VND/USD). Nhấn nút **Tiến hành thanh toán** để mở cổng Stripe.
+* **Trang thành công (`/api/payments/success`):** Hiển thị khi thanh toán thành công kèm theo Stripe Session ID.
+* **Trang hủy thanh toán (`/api/payments/cancel`):** Hiển thị khi khách hàng chủ động hủy thanh toán.
+
+Bạn chỉ cần truy cập **`http://localhost:8080/`** trên trình duyệt để trải nghiệm luồng mua sắm trực quan này!
+
 ---
 
 ## 🧪 Hướng dẫn Kiểm thử (Testing)

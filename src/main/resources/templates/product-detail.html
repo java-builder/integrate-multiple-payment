@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${product.name} + ' - JavaBuilder Store'"></title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/all.min.css}">
+    <link rel="stylesheet" th:href="@{/css/product-detail.css}">
+</head>
+<body>
+
+    <header>
+        <a href="/" class="logo">
+            <i class="fa-solid fa-cube"></i>
+            <span>JavaBuilder Store</span>
+        </a>
+        <a href="/checkout" class="cart-link">
+            <i class="fa-solid fa-shopping-bag"></i>
+            <span>Giỏ hàng</span>
+            <div class="cart-count" id="cart-count">0</div>
+        </a>
+    </header>
+
+    <div class="container">
+        <a href="/" class="back-link">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại cửa hàng
+        </a>
+
+        <div class="details-card">
+            <div class="image-container">
+                <img th:if="${product.imageUrl != null && !product.imageUrl.isEmpty()}" 
+                     th:src="${product.imageUrl}" 
+                     th:alt="${product.name}">
+                <i th:unless="${product.imageUrl != null && !product.imageUrl.isEmpty()}" 
+                   class="fa-solid fa-image image-placeholder"></i>
+            </div>
+            
+            <div class="info-container">
+                <div class="status-badge">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Còn hàng trong kho</span>
+                </div>
+                
+                <h1 class="product-name" th:text="${product.name}">Tên sản phẩm</h1>
+                
+                <div class="product-price" th:data-price="${product.price}" 
+                     th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+                
+                <div class="product-description" th:text="${product.description}">
+                    Mô tả chi tiết sản phẩm.
+                </div>
+                
+                <div class="meta-list">
+                    <div class="meta-item">
+                        <span>Số lượng khả dụng:</span>
+                        <span th:text="${product.quantity} + ' sản phẩm'">10 sản phẩm</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>Hình thức thanh toán:</span>
+                        <span>Stripe (Thẻ tín dụng)</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>Giao hàng:</span>
+                        <span>Miễn phí toàn quốc</span>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button class="action-btn btn-cart" 
+                            th:data-id="${product.id}" 
+                            th:data-name="${product.name}" 
+                            th:data-price="${product.price}"
+                            onclick="addToCart(this)">
+                        <i class="fa-solid fa-cart-plus"></i> Thêm vào giỏ
+                    </button>
+                    <button class="action-btn btn-buy" 
+                            th:data-id="${product.id}" 
+                            th:data-name="${product.name}" 
+                            th:data-price="${product.price}"
+                            onclick="buyNow(this)">
+                        <i class="fa-solid fa-bolt"></i> Mua ngay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-message">Đã thêm vào giỏ hàng!</span>
+    </div>
+
+    <script>
+        let cart = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedCart = localStorage.getItem('cart');
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+            }
+            updateCartBadge();
+        });
+
+        function addToCart(button) {
+            const id = parseInt(button.getAttribute('data-id'));
+            const name = button.getAttribute('data-name');
+            const price = parseFloat(button.getAttribute('data-price'));
+
+            const existingItem = cart.find(item => item.id === id);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ id, name, price, quantity: 1 });
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartBadge();
+            showToast(`Đã thêm "${name}" vào giỏ hàng!`);
+        }
+
+        function buyNow(button) {
+            const id = parseInt(button.getAttribute('data-id'));
+            const name = button.getAttribute('data-name');
+            const price = parseFloat(button.getAttribute('data-price'));
+
+            const existingItem = cart.find(item => item.id === id);
+            if (existingItem) {
+                // If already exists, we do nothing or increment
+            } else {
+                cart.push({ id, name, price, quantity: 1 });
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            window.location.href = '/checkout';
+        }
+
+        function updateCartBadge() {
+            const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-count').textContent = totalQty;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.add('active');
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

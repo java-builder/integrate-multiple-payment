@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thành công - JavaBuilder Store</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/all.min.css}">
+    <link rel="stylesheet" th:href="@{/css/success.css}">
+</head>
+<body>
+
+    <div class="success-card">
+        <div class="success-icon-container">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        
+        <h2 class="title">Thành công!</h2>
+        
+        <p class="message">
+            Cảm ơn bạn đã mua sắm tại JavaBuilder Store. Đơn hàng của bạn đã được thanh toán thử nghiệm thành công thông qua Stripe.
+        </p>
+
+        <div class="session-info" th:if="${sessionId != null}">
+            <span>Stripe Session Reference ID:</span>
+            <strong th:text="${sessionId}">cs_test_abc123</strong>
+        </div>
+
+        <a href="/" class="home-btn">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại cửa hàng
+        </a>
+    </div>
+
+</body>
+</html>
