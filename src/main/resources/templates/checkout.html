@@ -200,7 +200,9 @@
                 });
 
                 if (!orderResponse.ok) {
-                    throw new Error('Đặt hàng thất bại. Vui lòng thử lại!');
+                    overlay.classList.remove('active');
+                    alert('Đặt hàng thất bại. Vui lòng thử lại!');
+                    return;
                 }
 
                 const orderResult = await orderResponse.json();
@@ -220,7 +222,9 @@
                 });
 
                 if (!checkoutResponse.ok) {
-                    throw new Error('Không thể kết nối dịch vụ thanh toán Stripe!');
+                    overlay.classList.remove('active');
+                    alert('Không thể kết nối dịch vụ thanh toán Stripe!');
+                    return;
                 }
 
                 const checkoutResult = await checkoutResponse.json();
@@ -234,7 +238,7 @@
 
             } catch (error) {
                 overlay.classList.remove('active');
-                alert(error.message);
+                alert('Có lỗi xảy ra kết nối hệ thống. Vui lòng thử lại!');
             }
         }
     </script>

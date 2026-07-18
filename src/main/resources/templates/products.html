@@ -101,8 +101,7 @@
         }
 
         function updateCartBadge() {
-            const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('cart-count').textContent = totalQty;
+            document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
         }
 
         function showToast(message) {
