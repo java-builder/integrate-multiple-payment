@@ -17,6 +17,8 @@ public record CreateProductRequest(
         BigDecimal price,
 
         @DecimalMin(value = "1")
-        Integer quantity
+        Integer quantity,
+
+        String imageUrl
 ) {
 }

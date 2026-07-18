@@ -27,4 +27,7 @@ public class Product extends AbstractEntity<Long> {
 
     @Column(nullable = false)
     private Integer quantity;
+
+    @Column(length = 500)
+    private String imageUrl;
 }

@@ -1,0 +1,130 @@
+### ----------------------------------------------------
+### PRODUCT ENDPOINTS
+### ----------------------------------------------------
+
+### 1. Create Product 1 (MacBook Pro 16")
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "MacBook Pro 16-inch M3 Max",
+  "description": "Apple M3 Max chip with 16-core CPU, 40-core GPU, 48GB Unified Memory, and 1TB SSD storage. Space Black Liquid Retina XDR display.",
+  "price": 89000000,
+  "quantity": 15,
+  "imageUrl": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800"
+}
+
+### 2. Create Product 2 (Keychron Keyboard)
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "Keychron Q1 Pro Mechanical Keyboard",
+  "description": "QMK/VIA wireless custom mechanical keyboard, 75% layout, full CNC machined aluminum body, hot-swappable switches, double-gasket design.",
+  "price": 4900000,
+  "quantity": 50,
+  "imageUrl": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800"
+}
+
+### 3. Create Product 3 (Dell Monitor)
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "Dell UltraSharp 49 Curved Monitor - U4924DW",
+  "description": "Dual QHD (5120 x 1440) curved resolution monitor, IPS Black technology, 2000:1 contrast ratio, 90W USB-C power delivery, built-in KVM switch.",
+  "price": 29900000,
+  "quantity": 10,
+  "imageUrl": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800"
+}
+
+### 4. Create Product 4 (Sony Headphones)
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "Sony WH-1000XM5 Wireless Headphones",
+  "description": "Industry-leading noise-canceling over-ear headphones, 30-hour battery life, multipoint connection, Alexa built-in, crystal-clear hands-free calling.",
+  "price": 8490000,
+  "quantity": 30,
+  "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800"
+}
+
+### 5. Create Product 5 (Ultimate Masterclass)
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "Ultimate Spring Boot & Stripe Masterclass",
+  "description": "Lifetime access to the comprehensive guide on building secure, scalable e-commerce systems using Spring Boot 3, MapStruct, PostgreSQL, and Stripe Elements/Webhooks.",
+  "price": 1250000,
+  "quantity": 999,
+  "imageUrl": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800"
+}
+
+### 6. Get List of Products (Paginated)
+GET http://localhost:8080/api/products?page=1&size=10
+
+### 7. Get Product by ID
+GET http://localhost:8080/api/products/1
+
+
+### ----------------------------------------------------
+### ORDER ENDPOINTS
+### ----------------------------------------------------
+
+### 1. Create Order (Sample 1)
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    },
+    {
+      "productId": 2,
+      "quantity": 2
+    }
+  ],
+  "currency": "VND"
+}
+
+### 2. Create Order (Sample 2)
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": 3,
+      "quantity": 1
+    },
+    {
+      "productId": 4,
+      "quantity": 1
+    }
+  ],
+  "currency": "VND"
+}
+
+### 3. Get Order by ID
+GET http://localhost:8080/api/orders/1
+
+### 4. Get Order by Code (Replace with actual code from Order creation response)
+GET http://localhost:8080/api/orders/code/ORD-XXXXXX
+
+
+### ----------------------------------------------------
+### PAYMENT ENDPOINTS
+### ----------------------------------------------------
+
+### 1. Checkout Order (Stripe) (Replace orderCode with actual code from Order creation response)
+POST http://localhost:8080/api/payments/checkout
+Content-Type: application/json
+
+{
+  "orderCode": "ORD-XXXXXX",
+  "paymentGateway": "STRIPE"
+}

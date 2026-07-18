@@ -16,3 +16,8 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+
+stripe:
+  api-key: ${STRIPE_API_KEY:sk_test_mock_key}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:8080/api/payments/success}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:8080/api/payments/cancel}

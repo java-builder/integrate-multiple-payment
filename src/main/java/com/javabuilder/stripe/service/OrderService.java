@@ -36,6 +36,7 @@ public class OrderService {
         Order order = Order.builder()
                 .orderCode(orderCode)
                 .orderStatus(OrderStatus.PENDING)
+                .currency(request.currency())
                 .totalPrice(BigDecimal.ZERO)
                 .orderDetails(new ArrayList<>())
                 .build();

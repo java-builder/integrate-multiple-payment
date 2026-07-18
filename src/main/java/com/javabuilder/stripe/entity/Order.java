@@ -1,5 +1,6 @@
 package com.javabuilder.stripe.entity;
 
+import com.javabuilder.stripe.common.Currency;
 import com.javabuilder.stripe.common.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,6 +25,10 @@ public class Order extends AbstractEntity<Long> {
 
     @Column(nullable = false)
     private BigDecimal totalPrice;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Currency currency;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> orderDetails;

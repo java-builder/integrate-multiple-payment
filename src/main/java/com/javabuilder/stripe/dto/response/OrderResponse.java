@@ -12,6 +12,7 @@ public record OrderResponse(
         String orderCode,
         OrderStatus orderStatus,
         BigDecimal totalPrice,
+        com.javabuilder.stripe.common.Currency currency,
         List<OrderItemResponse> orderItems,
         Instant createdAt
 ) {}
