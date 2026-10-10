@@ -3,6 +3,8 @@ package com.javabuilder.stripe.strategy.stripe;
 import com.javabuilder.stripe.common.Currency;
 import com.javabuilder.stripe.common.PaymentGateway;
 import com.javabuilder.stripe.dto.response.PaymentGatewayResponse;
+import com.javabuilder.stripe.exception.AppException;
+import com.javabuilder.stripe.exception.ErrorCode;
 import com.javabuilder.stripe.strategy.PaymentStrategy;
 import com.javabuilder.stripe.strategy.dto.PaymentGatewayCommand;
 import com.stripe.StripeClient;
@@ -72,7 +74,7 @@ public class StripePaymentStrategy implements PaymentStrategy {
                     .build();
         } catch (StripeException e) {
             log.error("Stripe Checkout Session creation failed", e);
-            throw new RuntimeException("Stripe integration failed", e);
+            throw new AppException(ErrorCode.STRIPE_INTEGRATION_FAILED);
         }
     }
 

@@ -7,6 +7,8 @@ import com.javabuilder.stripe.dto.response.PaymentGatewayResponse;
 import com.javabuilder.stripe.dto.response.PaymentInitResponse;
 import com.javabuilder.stripe.entity.Order;
 import com.javabuilder.stripe.entity.Payment;
+import com.javabuilder.stripe.exception.AppException;
+import com.javabuilder.stripe.exception.ErrorCode;
 import com.javabuilder.stripe.repository.OrderRepository;
 import com.javabuilder.stripe.repository.PaymentRepository;
 import com.javabuilder.stripe.strategy.PaymentStrategy;
@@ -29,7 +31,7 @@ public class PaymentService {
     @Transactional(rollbackFor = Exception.class)
     public PaymentInitResponse initiatePayment(PaymentInitRequest request, String clientIp) {
         Order order = orderRepository.findByOrderCode(request.orderCode())
-                .orElseThrow(() -> new RuntimeException("Order not found with code: " + request.orderCode()));
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         if (order.getOrderStatus() == OrderStatus.SUCCESS) {
             throw new IllegalStateException("This order has already been paid!");

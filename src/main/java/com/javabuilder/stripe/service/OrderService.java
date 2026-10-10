@@ -7,6 +7,8 @@ import com.javabuilder.stripe.dto.response.OrderResponse;
 import com.javabuilder.stripe.entity.Order;
 import com.javabuilder.stripe.entity.OrderDetail;
 import com.javabuilder.stripe.entity.Product;
+import com.javabuilder.stripe.exception.AppException;
+import com.javabuilder.stripe.exception.ErrorCode;
 import com.javabuilder.stripe.mapper.OrderMapper;
 import com.javabuilder.stripe.repository.OrderRepository;
 import com.javabuilder.stripe.repository.ProductRepository;
@@ -46,10 +48,10 @@ public class OrderService {
         // 3. Process items, check stock, and associate details
         for (OrderItemRequest itemRequest : request.items()) {
             Product product = productRepository.findById(itemRequest.productId())
-                    .orElseThrow(() -> new RuntimeException("Product not found with ID: " + itemRequest.productId()));
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
             if (product.getQuantity() < itemRequest.quantity()) {
-                throw new RuntimeException("Product " + product.getName() + " is out of stock. Available: " + product.getQuantity());
+                throw new AppException(ErrorCode.OUT_OF_STOCK);
             }
 
             // Deduct stock

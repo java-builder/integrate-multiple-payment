@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Slf4j(topic = "VNPAY-UTILS")
 public final class VnPayUtils {
@@ -15,7 +15,7 @@ public final class VnPayUtils {
     }
 
     private static final String ALGORITHM = "HmacSHA512";
-    private static final Random RANDOM = new Random();
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public static String hmacSHA512(final String key, final String data) {
         try {

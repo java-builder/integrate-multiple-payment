@@ -29,7 +29,7 @@ public class VnPayPaymentStrategy implements PaymentStrategy {
     public PaymentGatewayResponse processPayment(PaymentGatewayCommand command) {
         long amount = command.totalPrice().multiply(BigDecimal.valueOf(100)).longValue();
         String vnpIpAddr = command.clientIp();
-        String vnp_TxnRef = VnPayUtils.getRandomNumber(8);
+        String vnpTxnRef = VnPayUtils.getRandomNumber(8);
 
         Map<String, String> vnpParams = new HashMap<>();
         vnpParams.put("vnp_Version", vnPayProperties.getVersion());
@@ -41,7 +41,7 @@ public class VnPayPaymentStrategy implements PaymentStrategy {
         vnpParams.put("vnp_Amount", String.valueOf(amount));
         vnpParams.put("vnp_CurrCode", "VND");
         vnpParams.put("vnp_Locale", "vn");
-        vnpParams.put("vnp_TxnRef", vnp_TxnRef);
+        vnpParams.put("vnp_TxnRef", vnpTxnRef);
         vnpParams.put("vnp_OrderInfo", "Payment for orderCode " + command.orderCode());
 
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));

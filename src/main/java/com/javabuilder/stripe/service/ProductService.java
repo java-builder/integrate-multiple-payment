@@ -5,6 +5,8 @@ import com.javabuilder.stripe.dto.response.CreateProductResponse;
 import com.javabuilder.stripe.dto.response.PageResponse;
 import com.javabuilder.stripe.dto.response.ProductDetailResponse;
 import com.javabuilder.stripe.entity.Product;
+import com.javabuilder.stripe.exception.AppException;
+import com.javabuilder.stripe.exception.ErrorCode;
 import com.javabuilder.stripe.mapper.ProductMapper;
 import com.javabuilder.stripe.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +33,8 @@ public class ProductService {
     }
 
     public PageResponse<ProductDetailResponse> getProducts(int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Sort sort = Sort.by(Product::getCreatedAt).descending();
+        Pageable pageable = PageRequest.of(page - 1, size, sort);
         Page<Product> productPage = productRepository.findAll(pageable);
         List<Product> products = productPage.getContent();
         List<ProductDetailResponse> responses = products.stream()
@@ -49,7 +52,7 @@ public class ProductService {
 
     public ProductDetailResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         return productMapper.toProductDetailResponse(product);
     }
 }

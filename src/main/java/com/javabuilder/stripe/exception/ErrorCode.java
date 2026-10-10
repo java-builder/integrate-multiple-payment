@@ -8,9 +8,13 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ErrorCode {
 
+    PRODUCT_NOT_FOUND(404, "Product not found", HttpStatus.NOT_FOUND),
+    OUT_OF_STOCK(400, "Product is out of stock", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_FOUND(404, "Order not found", HttpStatus.NOT_FOUND),
+    STRIPE_INTEGRATION_FAILED(500, "Stripe integration failed", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
 
     private final int code;
     private final String message;
-    private HttpStatus httpStatus;
+    private final HttpStatus httpStatus;
 }
