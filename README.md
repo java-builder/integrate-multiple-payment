@@ -90,7 +90,8 @@ public class StripeClientConfiguration {
 
 > [!TIP]
 > **`StripeClient` dùng để làm gì?**
-> Đây là class trung tâm của SDK giúp kết nối an toàn đa luồng (thread-safe), tránh lỗi tranh chấp tài nguyên của cách thiết lập static `Stripe.apiKey` cũ. Nó được inject trực tiếp vào các service thông qua Spring.
+> 
+> Đây là đối tượng giúp chúng ta kết nối và gọi trực tiếp các API của Stripe từ Java.
 
 ### Bước 4: Viết code nghiệp vụ thanh toán
 
