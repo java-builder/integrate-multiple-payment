@@ -5,26 +5,27 @@ Tài liệu hướng dẫn chi tiết toàn bộ quy trình tích hợp cổng t
 ---
 
 ## 📌 Mục Lục
-1. [Tài liệu chính thức & Tài nguyên PayPal](#1-tài-liệu-chính-thức--tài-nguyên-paypal)
-2. [Kiến trúc & Luồng hoạt động (Sequence Diagram)](#2-kiến-trúc--luồng-hoạt-động-sequence-diagram)
-3. [Môi trường Sandbox & Tài khoản kiểm thử (Test Accounts)](#3-môi-trường-sandbox--tài-khoản-kiểm-thử-test-accounts)
-4. [Cấu hình tham số Spring Boot (application.yaml & pom.xml)](#4-cấu-hình-tham-số-spring-boot-applicationyaml--pomxml)
-5. [Cấu trúc mã nguồn & Triển khai chi tiết (Strategy Pattern)](#5-cấu-trúc-mã-nguồn--triển-khai-chi-tiết-strategy-pattern)
-   * [5.1. Cấu hình PaypalServerSdkClient Bean (PaypalClientConfiguration)](#51-cấu-hình-paypalserversdkclient-bean-paypalclientconfiguration)
-   * [5.2. Khế ước chung (PaymentStrategy & PaymentGatewayCommand)](#52-khế-ước-chung-paymentstrategy--paymentgatewaycommand)
-   * [5.3. Chiến lược thanh toán PayPal (PaypalPaymentStrategy)](#53-chiến-lược-thanh-toán-paypal-paypalpaymentstrategy)
-   * [5.4. Nhà máy khởi tạo (PaymentStrategyFactory)](#54-nhà-máy-khởi-tạo-paymentstrategyfactory)
-   * [5.5. Tầng nghiệp vụ thanh toán (PaymentService)](#55-tầng-nghiệp-vụ-thanh-toán-paymentservice)
-   * [5.6. Lớp API tiếp nhận (PaymentController)](#56-lớp-api-tiếp-nhận-paymentcontroller)
-   * [5.7. Xử lý Return / Cancel URL (ViewController)](#57-xử-lý-return--cancel-url-viewcontroller)
-6. [Quy chuẩn xử lý & Các lỗi thường gặp (Lưu ý sống còn)](#6-quy-chuẩn-xử-lý--các-lỗi-thường-gặp-lưu-ý-sống-còn)
-   * [6.1. Lỗi lệch số tiền (Payment amount mismatch)](#61-lỗi-lệch-số-tiền-payment-amount-mismatch)
-   * [6.2. Lỗi vượt hạn mức (TRANSACTION_LIMIT_EXCEEDED - 422)](#62-lỗi-vượt-hạn-mức-transaction_limit_exceeded---422)
-   * [6.3. Giới hạn tiền tệ của PayPal (Không hỗ trợ VND)](#63-giới-hạn-tiền-tệ-của-paypal-không-hỗ-trợ-vnd)
-7. [Hướng dẫn kiểm thử thực tế (Testing & API Requests)](#7-hướng-dẫn-kiểm-thử-thực-tế-testing--api-requests)
+1. [Tài liệu chính thức & Tài nguyên PayPal](#1-tai-lieu-chinh-thuc-tai-nguyen-paypal)
+2. [Kiến trúc & Luồng hoạt động (Sequence Diagram)](#2-kien-truc-luong-hoat-dong-sequence-diagram)
+3. [Môi trường Sandbox & Tài khoản kiểm thử (Test Accounts)](#3-moi-truong-sandbox-tai-khoan-kiem-thu-test-accounts)
+4. [Cấu hình tham số Spring Boot (application.yaml & pom.xml)](#4-cau-hinh-tham-so-spring-boot-applicationyaml-pomxml)
+5. [Cấu trúc mã nguồn & Triển khai chi tiết (Strategy Pattern)](#5-cau-truc-ma-nguon-trien-khai-chi-tiet-strategy-pattern)
+   * [5.1. Cấu hình PaypalServerSdkClient Bean (PaypalClientConfiguration)](#51-cau-hinh-paypalserversdkclient-bean-paypalclientconfiguration)
+   * [5.2. Khế ước chung (PaymentStrategy & PaymentGatewayCommand)](#52-khe-uoc-chung-paymentstrategy-paymentgatewaycommand)
+   * [5.3. Chiến lược thanh toán PayPal (PaypalPaymentStrategy)](#53-chien-luoc-thanh-toan-paypal-paypalpaymentstrategy)
+   * [5.4. Nhà máy khởi tạo (PaymentStrategyFactory)](#54-nha-may-khoi-tao-paymentstrategyfactory)
+   * [5.5. Tầng nghiệp vụ thanh toán (PaymentService)](#55-tang-nghiep-vu-thanh-toan-paymentservice)
+   * [5.6. Lớp API tiếp nhận (PaymentController)](#56-lop-api-tiep-nhan-paymentcontroller)
+   * [5.7. Xử lý Return / Cancel URL (ViewController)](#57-xu-ly-return-cancel-url-viewcontroller)
+6. [Quy chuẩn xử lý & Các lỗi thường gặp (Lưu ý sống còn)](#6-quy-chuan-xu-ly-cac-loi-thuong-gap-luu-y-song-con)
+   * [6.1. Lỗi lệch số tiền (Payment amount mismatch)](#61-loi-lech-so-tien-payment-amount-mismatch)
+   * [6.2. Lỗi vượt hạn mức (TRANSACTION_LIMIT_EXCEEDED - 422)](#62-loi-vuot-han-muc-transaction-limit-exceeded-422)
+   * [6.3. Giới hạn tiền tệ của PayPal (Không hỗ trợ VND)](#63-gioi-han-tien-te-cua-paypal-khong-ho-tro-vnd)
+7. [Hướng dẫn kiểm thử thực tế (Testing & API Requests)](#7-huong-dan-kiem-thu-thuc-te-testing-api-requests)
 
 ---
 
+<a id="1-tai-lieu-chinh-thuc-tai-nguyen-paypal"></a>
 ## 1. 📚 Tài liệu chính thức & Tài nguyên PayPal
 
 * **Trang chủ tài liệu tích hợp PayPal Developer:** [https://developer.paypal.com/docs](https://developer.paypal.com/docs)
@@ -36,6 +37,7 @@ Tài liệu hướng dẫn chi tiết toàn bộ quy trình tích hợp cổng t
 
 ---
 
+<a id="2-kien-truc-luong-hoat-dong-sequence-diagram"></a>
 ## 2. 🏗️ Kiến trúc & Luồng hoạt động (Sequence Diagram)
 
 Mô hình thanh toán PayPal Orders API v2 với `intent=CAPTURE` theo quy trình chuẩn **Redirect Flow**:
@@ -69,6 +71,7 @@ sequenceDiagram
 
 ---
 
+<a id="3-moi-truong-sandbox-tai-khoan-kiem-thu-test-accounts"></a>
 ## 3. 🧪 Môi trường Sandbox & Tài khoản kiểm thử (Test Accounts)
 
 ### 3.1. Lấy Client ID và Client Secret
@@ -87,6 +90,7 @@ sequenceDiagram
 
 ---
 
+<a id="4-cau-hinh-tham-so-spring-boot-applicationyaml-pomxml"></a>
 ## 4. ⚙️ Cấu hình tham số Spring Boot (application.yaml & pom.xml)
 
 ### 4.1. Thư viện phụ thuộc `pom.xml`
@@ -116,10 +120,12 @@ paypal:
 
 ---
 
+<a id="5-cau-truc-ma-nguon-trien-khai-chi-tiet-strategy-pattern"></a>
 ## 5. 💻 Cấu trúc mã nguồn & Triển khai chi tiết (Strategy Pattern)
 
 Toàn bộ logic được chuẩn hóa theo mô hình **Strategy Pattern**. Code được chú thích rõ ràng bên trong và giải thích chi tiết ngay bên dưới từng lớp.
 
+<a id="51-cau-hinh-paypalserversdkclient-bean-paypalclientconfiguration"></a>
 ### 5.1. Cấu hình PaypalServerSdkClient Bean (`PaypalClientConfiguration.java`)
 
 ```java
@@ -174,6 +180,7 @@ public class PaypalClientConfiguration {
 
 ---
 
+<a id="52-khe-uoc-chung-paymentstrategy-paymentgatewaycommand"></a>
 ### 5.2. Khế ước chung (`PaymentStrategy.java` & `PaymentGatewayCommand.java`)
 
 #### Giao diện chiến lược:
@@ -223,6 +230,7 @@ public record PaymentGatewayCommand(
 
 ---
 
+<a id="53-chien-luoc-thanh-toan-paypal-paypalpaymentstrategy"></a>
 ### 5.3. Chiến lược thanh toán PayPal (`PaypalPaymentStrategy.java`)
 
 ```java
@@ -382,6 +390,7 @@ public class PaypalPaymentStrategy implements PaymentStrategy {
 
 ---
 
+<a id="54-nha-may-khoi-tao-paymentstrategyfactory"></a>
 ### 5.4. Nhà máy khởi tạo (`PaymentStrategyFactory.java`)
 
 ```java
@@ -424,6 +433,7 @@ public class PaymentStrategyFactory {
 
 ---
 
+<a id="55-tang-nghiep-vu-thanh-toan-paymentservice"></a>
 ### 5.5. Tầng nghiệp vụ thanh toán (`PaymentService.java`)
 
 ```java
@@ -513,6 +523,7 @@ public class PaymentService {
 
 ---
 
+<a id="56-lop-api-tiep-nhan-paymentcontroller"></a>
 ### 5.6. Lớp API tiếp nhận (`PaymentController.java`)
 
 ```java
@@ -557,6 +568,7 @@ public class PaymentController {
 
 ---
 
+<a id="57-xu-ly-return-cancel-url-viewcontroller"></a>
 ### 5.7. Xử lý Return / Cancel URL (`ViewController.java`)
 
 ```java
@@ -587,12 +599,15 @@ public class ViewController {
 
 ---
 
+<a id="6-quy-chuan-xu-ly-cac-loi-thuong-gap-luu-y-song-con"></a>
 ## 6. ⚠️ Quy chuẩn xử lý & Các lỗi thường gặp (Lưu ý sống còn)
 
+<a id="61-loi-lech-so-tien-payment-amount-mismatch"></a>
 ### 6.1. Lỗi lệch số tiền (`Payment amount mismatch`)
 * **Nguyên nhân:** Biến `itemTotal` khởi tạo là `BigDecimal.ZERO` nhưng trong vòng lặp không cộng dồn `itemTotal = itemTotal.add(lineTotal)`, dẫn đến `itemTotal` là `0.00` và so sánh lệch với `totalPrice`.
 * **Khắc phục:** Đảm bảo `unitPrice` được tính trên từng đơn vị sản phẩm và `itemTotal` được cộng dồn theo từng dòng.
 
+<a id="62-loi-vuot-han-muc-transaction-limit-exceeded-422"></a>
 ### 6.2. Lỗi vượt hạn mức giao dịch (`TRANSACTION_LIMIT_EXCEEDED` - HTTP 422)
 * **Thông báo lỗi từ PayPal:**
   ```json
@@ -607,6 +622,7 @@ public class ViewController {
   1. Khi kiểm thử với cổng PayPal, hãy tạo đơn hàng với giá trị thực tế của USD (ví dụ: $49.99, $100,...).
   2. Không gán nhầm giá VND vào đơn hàng có currency là USD.
 
+<a id="63-gioi-han-tien-te-cua-paypal-khong-ho-tro-vnd"></a>
 ### 6.3. Giới hạn tiền tệ của PayPal (Không hỗ trợ VND)
 * **Quy định của PayPal:** PayPal chỉ hỗ trợ 25 loại tiền tệ (USD, EUR, GBP, AUD, CAD, JPY, SGD, THB,...). **PayPal KHÔNG hỗ trợ đơn vị tiền tệ VND**.
 * Nếu bạn gửi `currency_code = "VND"` lên PayPal API, PayPal sẽ từ chối với lỗi `CURRENCY_NOT_SUPPORTED`.
@@ -616,6 +632,7 @@ public class ViewController {
 
 ---
 
+<a id="7-huong-dan-kiem-thu-thuc-te-testing-api-requests"></a>
 ## 7. 🧪 Hướng dẫn kiểm thử thực tế (Testing & API Requests)
 
 ### Bước 1: Tạo đơn hàng USD (Giá trị hợp lệ < $10,000 USD)

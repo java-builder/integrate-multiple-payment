@@ -1,11 +1,31 @@
-/**
- * Quick Checkout Modal Controller (Thanh toán trực tiếp không cần vào giỏ hàng)
- */
-
 let quickProduct = null;
 let quickGateway = 'VNPAY';
 let quickCurrency = 'USD';
 const USD_VND_RATE = 25000;
+
+const QUICK_GATEWAY_CONFIGS = {
+    VNPAY: {
+        activeClass: 'vnpay-active',
+        btnClass: 'quick-pay-btn btn-vnpay',
+        btnText: 'Thanh toán qua VNPAY',
+        lockCurrency: null,
+        hintText: null
+    },
+    PAYPAL: {
+        activeClass: 'paypal-active',
+        btnClass: 'quick-pay-btn btn-paypal',
+        btnText: 'Thanh toán qua PayPal',
+        lockCurrency: 'USD',
+        hintText: 'PayPal chỉ hỗ trợ thanh toán bằng Đô la Mỹ (USD)'
+    },
+    STRIPE: {
+        activeClass: null,
+        btnClass: 'quick-pay-btn btn-stripe',
+        btnText: 'Thanh toán qua Stripe',
+        lockCurrency: null,
+        hintText: null
+    }
+};
 
 function formatQuickCurrency(amount, currency) {
     if (currency === 'VND') {
@@ -16,16 +36,16 @@ function formatQuickCurrency(amount, currency) {
 }
 
 function openQuickCheckout(btn) {
-    const id = parseInt(btn.getAttribute('data-id'));
-    const name = btn.getAttribute('data-name');
-    const price = parseFloat(btn.getAttribute('data-price'));
-    const image = btn.getAttribute('data-image') || '';
+    const id = Number.parseInt(btn.dataset.id, 10);
+    const name = btn.dataset.name;
+    const price = Number.parseFloat(btn.dataset.price);
+    const image = btn.dataset.image || '';
 
     quickProduct = {
-        id: id,
-        name: name,
-        price: price,
-        image: image,
+        id,
+        name,
+        price,
+        image,
         quantity: 1
     };
 
@@ -35,12 +55,8 @@ function openQuickCheckout(btn) {
 
     const imgEl = document.getElementById('quick-prod-image');
     if (imgEl) {
-        if (image) {
-            imgEl.src = image;
-            imgEl.style.display = 'block';
-        } else {
-            imgEl.style.display = 'none';
-        }
+        imgEl.src = image;
+        imgEl.style.display = image ? 'block' : 'none';
     }
 
     // Default to USD and VNPAY
@@ -78,14 +94,14 @@ function changeQuickQty(delta) {
 /* Custom Currency Dropdown */
 function toggleQuickCurrencyDropdown() {
     const trigger = document.getElementById('quick-curr-trigger');
-    if (trigger && trigger.classList.contains('disabled')) return;
+    if (trigger?.classList.contains('disabled')) return;
     const wrapper = document.getElementById('quick-curr-wrapper');
-    if (wrapper) wrapper.classList.toggle('open');
+    wrapper?.classList.toggle('open');
 }
 
 function closeQuickDropdown() {
     const wrapper = document.getElementById('quick-curr-wrapper');
-    if (wrapper) wrapper.classList.remove('open');
+    wrapper?.classList.remove('open');
 }
 
 function setQuickCurrency(curr) {
@@ -111,8 +127,8 @@ function setQuickCurrency(curr) {
                     <span class="quick-opt-sub" style="margin-left: 4px;">- Việt Nam Đồng</span>
                 </div>
             `;
-            if (optVnd) optVnd.classList.add('selected');
-            if (optUsd) optUsd.classList.remove('selected');
+            optVnd?.classList.add('selected');
+            optUsd?.classList.remove('selected');
         } else {
             displayEl.innerHTML = `
                 <span class="quick-curr-badge quick-badge-usd">$</span>
@@ -121,8 +137,8 @@ function setQuickCurrency(curr) {
                     <span class="quick-opt-sub" style="margin-left: 4px;">- Đô la Mỹ</span>
                 </div>
             `;
-            if (optUsd) optUsd.classList.add('selected');
-            if (optVnd) optVnd.classList.remove('selected');
+            optUsd?.classList.add('selected');
+            optVnd?.classList.remove('selected');
         }
     }
 
@@ -134,6 +150,9 @@ function selectQuickGateway(gateway) {
         showQuickNotice('VietQR Napas 247');
         return;
     }
+
+    const config = QUICK_GATEWAY_CONFIGS[gateway];
+    if (!config) return;
 
     quickGateway = gateway;
 
@@ -147,41 +166,33 @@ function selectQuickGateway(gateway) {
 
     // Reset active states
     [vnpayItem, stripeItem, paypalItem].forEach(el => {
-        if (el) el.classList.remove('active', 'vnpay-active', 'paypal-active');
+        el?.classList.remove('active', 'vnpay-active', 'paypal-active');
     });
 
-    if (gateway === 'VNPAY') {
-        if (vnpayItem) vnpayItem.classList.add('active', 'vnpay-active');
-
-        if (currTrigger) currTrigger.classList.remove('disabled');
-        if (currHint) currHint.style.display = 'none';
-
-        if (payBtn) payBtn.className = 'quick-pay-btn btn-vnpay';
-        if (payText) payText.textContent = 'Thanh toán qua VNPAY';
-
-    } else if (gateway === 'PAYPAL') {
-        if (paypalItem) paypalItem.classList.add('active', 'paypal-active');
-
-        // Force USD for PayPal
-        setQuickCurrency('USD');
-        if (currTrigger) currTrigger.classList.add('disabled');
-        if (currHint) {
-            currHint.innerHTML = '<i class="fa-solid fa-circle-info"></i> PayPal chỉ hỗ trợ thanh toán bằng Đô la Mỹ (USD)';
-            currHint.style.display = 'flex';
-        }
-
-        if (payBtn) payBtn.className = 'quick-pay-btn btn-paypal';
-        if (payText) payText.textContent = 'Thanh toán qua PayPal';
-
-    } else {
-        if (stripeItem) stripeItem.classList.add('active');
-
-        if (currTrigger) currTrigger.classList.remove('disabled');
-        if (currHint) currHint.style.display = 'none';
-
-        if (payBtn) payBtn.className = 'quick-pay-btn btn-stripe';
-        if (payText) payText.textContent = 'Thanh toán qua Stripe';
+    const activeItem = document.getElementById(`quick-gw-${gateway.toLowerCase()}`);
+    if (activeItem) {
+        activeItem.classList.add('active');
+        if (config.activeClass) activeItem.classList.add(config.activeClass);
     }
+
+    if (config.lockCurrency) {
+        setQuickCurrency(config.lockCurrency);
+        currTrigger?.classList.add('disabled');
+    } else {
+        currTrigger?.classList.remove('disabled');
+    }
+
+    if (currHint) {
+        if (config.hintText) {
+            currHint.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${config.hintText}`;
+            currHint.style.display = 'flex';
+        } else {
+            currHint.style.display = 'none';
+        }
+    }
+
+    if (payBtn) payBtn.className = config.btnClass;
+    if (payText) payText.textContent = config.btnText;
 
     updateQuickTotals();
 }
@@ -189,7 +200,7 @@ function selectQuickGateway(gateway) {
 function updateQuickTotals() {
     if (!quickProduct) return;
     const subtotal = quickProduct.price * quickProduct.quantity;
-    
+
     const unitPriceEl = document.getElementById('quick-prod-unitprice');
     const totalAmountEl = document.getElementById('quick-total-display');
 
@@ -206,10 +217,9 @@ function showQuickNotice(gatewayName) {
     }
 }
 
-// Close custom dropdown on outside click
 document.addEventListener('click', (e) => {
     const wrapper = document.getElementById('quick-curr-wrapper');
-    if (wrapper && !wrapper.contains(e.target)) {
+    if (!wrapper?.contains(e.target)) {
         closeQuickDropdown();
     }
 });
@@ -223,9 +233,7 @@ async function executeDirectPayment() {
     if (loadingText) {
         loadingText.textContent = `Đang kết nối cổng thanh toán ${quickGateway}...`;
     }
-    if (overlay) {
-        overlay.classList.add('active');
-    }
+    overlay?.classList.add('active');
 
     const orderPayload = {
         items: [{
@@ -243,38 +251,43 @@ async function executeDirectPayment() {
         });
 
         if (!orderRes.ok) {
-            if (overlay) overlay.classList.remove('active');
+            overlay?.classList.remove('active');
             if (typeof showToast === 'function') showToast('Không thể tạo đơn hàng. Vui lòng thử lại!');
             return;
         }
 
         const orderData = await orderRes.json();
-        const orderCode = orderData.data.orderCode;
+        const orderCode = orderData?.data?.orderCode;
 
         const paymentRes = await fetch('/api/payments/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                orderCode: orderCode,
+                orderCode,
                 paymentGateway: quickGateway
             })
         });
 
         if (!paymentRes.ok) {
-            const errData = await paymentRes.json().catch(() => null);
-            const errMsg = errData?.message || `Không thể kết nối cổng ${quickGateway}!`;
-            if (overlay) overlay.classList.remove('active');
+            let errMsg = `Không thể kết nối cổng ${quickGateway}!`;
+            try {
+                const errData = await paymentRes.json();
+                if (errData?.message) errMsg = errData.message;
+            } catch {
+                // Ignore parse errors for non-JSON responses
+            }
+            overlay?.classList.remove('active');
             if (typeof showToast === 'function') showToast(errMsg);
             return;
         }
 
         const paymentData = await paymentRes.json();
-        const paymentUrl = paymentData.data.paymentUrl;
-
-        window.location.href = paymentUrl;
+        if (paymentData?.data?.paymentUrl) {
+            window.location.href = paymentData.data.paymentUrl;
+        }
 
     } catch (err) {
-        if (overlay) overlay.classList.remove('active');
+        overlay?.classList.remove('active');
         if (typeof showToast === 'function') showToast('Lỗi kết nối máy chủ. Vui lòng thử lại!');
     }
 }

@@ -5,21 +5,22 @@ Tài liệu hướng dẫn chi tiết toàn bộ quy trình tích hợp cổng t
 ---
 
 ## 📌 Mục Lục
-1. [Tài liệu chính thức & Tài nguyên VNPAY](#1-tài-liệu-chính-thức--tài-nguyên-vnpay)
-2. [Kiến trúc & Luồng hoạt động (Sequence Diagram)](#2-kiến-trúc--luồng-hoạt-động-sequence-diagram)
-3. [Môi trường Sandbox & Thông tin thẻ Test](#3-môi-trường-sandbox--thông-tin-thẻ-test)
-4. [Cấu hình tham số Spring Boot (application.yaml)](#4-cấu-hình-tham-số-spring-boot-applicationyaml)
-5. [Cấu trúc mã nguồn & Triển khai chi tiết](#5-cấu-trúc-mã-nguồn--triển-khai-chi-tiết)
-   * [5.1. Lớp cấu hình thuộc tính (VnPayProperties)](#51-lớp-cấu-hình-thuộc-tính-vnpayproperties)
-   * [5.2. Tiện ích mã hóa HMAC-SHA512 (VnPayUtils)](#52-tiện-ích-mã-hóa-hmac-sha512-vnpayutils)
-   * [5.3. Chiến lược thanh toán VNPAY (VnPayPaymentStrategy)](#53-chiến-lược-thanh-toán-vnpay-vnpaypaymentstrategy)
-   * [5.4. Tích hợp với Factory & PaymentService](#54-tích-hợp-với-factory--paymentservice)
-   * [5.5. Xử lý Callback kết quả thanh toán (vnp_ReturnUrl)](#55-xử-lý-callback-kết-quả-thanh-toán-vnp_returnurl)
-6. [Quy chuẩn thuật toán & Lưu ý sống còn](#6-quy-chuẩn-thuật-toán--lưu-ý-sống-còn)
-7. [Bảng tra cứu mã phản hồi (vnp_ResponseCode) & Xử lý lỗi](#7-bảng-tra-cứu-mã-phản-hồi-vnp_responsecode--xử-lý-lỗi)
+1. [Tài liệu chính thức & Tài nguyên VNPAY](#1-tai-lieu-chinh-thuc-tai-nguyen-vnpay)
+2. [Kiến trúc & Luồng hoạt động (Sequence Diagram)](#2-kien-truc-luong-hoat-dong-sequence-diagram)
+3. [Môi trường Sandbox & Thông tin thẻ Test](#3-moi-truong-sandbox-thong-tin-the-test)
+4. [Cấu hình tham số Spring Boot (application.yaml)](#4-cau-hinh-tham-so-spring-boot-applicationyaml)
+5. [Cấu trúc mã nguồn & Triển khai chi tiết](#5-cau-truc-ma-nguon-trien-khai-chi-tiet)
+   * [5.1. Lớp cấu hình thuộc tính (VnPayProperties)](#51-lop-cau-hinh-thuoc-tinh-vnpayproperties)
+   * [5.2. Tiện ích mã hóa HMAC-SHA512 (VnPayUtils)](#52-tien-ich-ma-hoa-hmac-sha512-vnpayutils)
+   * [5.3. Chiến lược thanh toán VNPAY (VnPayPaymentStrategy)](#53-chien-luoc-thanh-toan-vnpay-vnpaypaymentstrategy)
+   * [5.4. Tích hợp với Factory & PaymentService](#54-tich-hop-voi-factory-paymentservice)
+   * [5.5. Xử lý Callback kết quả thanh toán (vnp_ReturnUrl)](#55-xu-ly-callback-ket-qua-thanh-toan-vnp-returnurl)
+6. [Quy chuẩn thuật toán & Lưu ý sống còn](#6-quy-chuan-thuat-toan-luu-y-song-con)
+7. [Bảng tra cứu mã phản hồi (vnp_ResponseCode) & Xử lý lỗi](#7-bang-tra-cuu-ma-phan-hoi-vnp-responsecode-xu-ly-loi)
 
 ---
 
+<a id="1-tai-lieu-chinh-thuc-tai-nguyen-vnpay"></a>
 ## 1. 📚 Tài liệu chính thức & Tài nguyên VNPAY
 
 * **Trang chủ tài liệu tích hợp API VNPAY:** [https://sandbox.vnpayment.vn/apis/](https://sandbox.vnpayment.vn/apis/)
@@ -34,6 +35,7 @@ Tài liệu hướng dẫn chi tiết toàn bộ quy trình tích hợp cổng t
 
 ---
 
+<a id="2-kien-truc-luong-hoat-dong-sequence-diagram"></a>
 ## 2. 🏗️ Kiến trúc & Luồng hoạt động (Sequence Diagram)
 
 Mô hình chuyển hướng thanh toán an toàn (**Redirect Flow**) chuẩn của VNPAY:
@@ -65,6 +67,7 @@ sequenceDiagram
 
 ---
 
+<a id="3-moi-truong-sandbox-thong-tin-the-test"></a>
 ## 3. 🧪 Môi trường Sandbox & Thông tin thẻ Test
 
 ### 3.1. Đăng ký & Thông tin kết nối Sandbox
@@ -89,6 +92,7 @@ sequenceDiagram
 
 ---
 
+<a id="4-cau-hinh-tham-so-spring-boot-applicationyaml"></a>
 ## 4. ⚙️ Cấu hình tham số Spring Boot (application.yaml)
 
 Trong file `src/main/resources/application.yaml`:
@@ -106,8 +110,10 @@ vnpay:
 
 ---
 
+<a id="5-cau-truc-ma-nguon-trien-khai-chi-tiet"></a>
 ## 5. 💻 Cấu trúc mã nguồn & Triển khai chi tiết
 
+<a id="51-lop-cau-hinh-thuoc-tinh-vnpayproperties"></a>
 ### 5.1. Lớp cấu hình thuộc tính (`VnPayProperties`)
 File: `src/main/java/com/javabuilder/stripe/strategy/vnpay/VnPayProperties.java`
 
@@ -155,6 +161,7 @@ public class VnPayProperties {
 
 ---
 
+<a id="52-tien-ich-ma-hoa-hmac-sha512-vnpayutils"></a>
 ### 5.2. Tiện ích mã hóa HMAC-SHA512 (`VnPayUtils`)
 File: `src/main/java/com/javabuilder/stripe/strategy/vnpay/VnPayUtils.java`
 
@@ -225,6 +232,7 @@ public final class VnPayUtils {
 
 ---
 
+<a id="53-chien-luoc-thanh-toan-vnpay-vnpaypaymentstrategy"></a>
 ### 5.3. Chiến lược thanh toán VNPAY (`VnPayPaymentStrategy`)
 File: `src/main/java/com/javabuilder/stripe/strategy/vnpay/VnPayPaymentStrategy.java`
 
@@ -342,6 +350,7 @@ public class VnPayPaymentStrategy implements PaymentStrategy {
 
 ---
 
+<a id="54-tich-hop-voi-factory-paymentservice"></a>
 ### 5.4. Tích hợp với Factory & PaymentService
 File: `src/main/java/com/javabuilder/stripe/service/PaymentService.java`
 
@@ -430,6 +439,7 @@ public class PaymentService {
 
 ---
 
+<a id="55-xu-ly-callback-ket-qua-thanh-toan-vnp-returnurl"></a>
 ### 5.5. Xử lý Callback kết quả thanh toán (`vnp_ReturnUrl`)
 File: `src/main/java/com/javabuilder/stripe/controller/ViewController.java`
 
@@ -471,6 +481,7 @@ public class ViewController {
 
 ---
 
+<a id="6-quy-chuan-thuat-toan-luu-y-song-con"></a>
 ## 6. 🛡️ Quy chuẩn thuật toán & Lưu ý sống còn
 
 1. **Quy định nhân số tiền với 100 (`vnp_Amount`):**
@@ -487,6 +498,7 @@ public class ViewController {
 
 ---
 
+<a id="7-bang-tra-cuu-ma-phan-hoi-vnp-responsecode-xu-ly-loi"></a>
 ## 7. 🔍 Bảng tra cứu mã phản hồi (`vnp_ResponseCode`) & Xử lý lỗi
 
 | Mã lỗi (`vnp_ResponseCode`) | Ý nghĩa chi tiết | Giải pháp xử lý |

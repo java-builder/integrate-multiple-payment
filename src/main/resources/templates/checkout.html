@@ -239,17 +239,51 @@
         let cart = [];
         let selectedGateway = 'VNPAY';
 
+        const CHECKOUT_GATEWAY_CONFIGS = {
+            VNPAY: {
+                cardClass: 'vnpay-selected',
+                displayName: 'VNPAY',
+                btnClass: 'mui-pay-btn btn-vnpay',
+                btnText: 'Thanh toán qua VNPAY',
+                loadingText: 'Đang kết nối cổng thanh toán VNPAY...',
+                lockCurrency: null,
+                hintText: null
+            },
+            STRIPE: {
+                cardClass: 'stripe-selected',
+                displayName: 'Stripe Checkout',
+                btnClass: 'mui-pay-btn btn-stripe',
+                btnText: 'Thanh toán qua Stripe',
+                loadingText: 'Đang kết nối cổng thanh toán Stripe...',
+                lockCurrency: null,
+                hintText: null
+            },
+            PAYPAL: {
+                cardClass: 'paypal-selected',
+                displayName: 'PayPal Wallet',
+                btnClass: 'mui-pay-btn btn-paypal',
+                btnText: 'Thanh toán qua PayPal',
+                loadingText: 'Đang kết nối cổng thanh toán PayPal...',
+                lockCurrency: 'USD',
+                hintText: 'PayPal chỉ hỗ trợ thanh toán bằng Đô la Mỹ (USD)'
+            }
+        };
+
         window.addEventListener('DOMContentLoaded', () => {
             const savedCart = localStorage.getItem('cart');
             if (savedCart) {
-                cart = JSON.parse(savedCart);
+                try {
+                    cart = JSON.parse(savedCart);
+                } catch {
+                    cart = [];
+                }
             }
             updateCartUI();
             updateGatewayUI();
         });
 
         function updateQuantity(id, delta) {
-            const item = cart.find(item => item.id === id);
+            const item = cart.find(i => i.id === id);
             if (item) {
                 item.quantity += delta;
                 if (item.quantity <= 0) {
@@ -277,21 +311,20 @@
             if (currency === 'VND') {
                 const vndAmount = amount * 25000;
                 return new Intl.NumberFormat('vi-VN').format(Math.round(vndAmount)) + ' ₫';
-            } else {
-                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
             }
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
         }
 
         function toggleCheckoutCurrencyDropdown() {
             const trigger = document.getElementById('checkout-currency-trigger');
-            if (trigger && trigger.classList.contains('disabled')) return;
+            if (trigger?.classList.contains('disabled')) return;
             const wrapper = document.getElementById('checkout-currency-wrapper');
-            if (wrapper) wrapper.classList.toggle('open');
+            wrapper?.classList.toggle('open');
         }
 
         function selectCheckoutCurrency(curr) {
             const wrapper = document.getElementById('checkout-currency-wrapper');
-            if (wrapper) wrapper.classList.remove('open');
+            wrapper?.classList.remove('open');
 
             if (selectedGateway === 'PAYPAL' && curr === 'VND') {
                 showToast('PayPal chỉ hỗ trợ thanh toán bằng Đô la Mỹ (USD)');
@@ -308,7 +341,7 @@
             const optVnd = document.getElementById('opt-vnd');
             const optUsd = document.getElementById('opt-usd');
 
-            if (!displayEl || !optVnd || !optUsd) return;
+            if (!displayEl) return;
 
             if (curr === 'VND') {
                 displayEl.innerHTML = `
@@ -318,8 +351,8 @@
                         <span class="opt-sub" style="margin-left: 4px;">- Việt Nam Đồng</span>
                     </div>
                 `;
-                optVnd.classList.add('selected');
-                optUsd.classList.remove('selected');
+                optVnd?.classList.add('selected');
+                optUsd?.classList.remove('selected');
             } else {
                 displayEl.innerHTML = `
                     <span class="curr-flag-badge curr-badge-usd">$</span>
@@ -328,82 +361,66 @@
                         <span class="opt-sub" style="margin-left: 4px;">- Đô la Mỹ</span>
                     </div>
                 `;
-                optUsd.classList.add('selected');
-                optVnd.classList.remove('selected');
+                optUsd?.classList.add('selected');
+                optVnd?.classList.remove('selected');
             }
         }
 
         document.addEventListener('click', (e) => {
             const wrapper = document.getElementById('checkout-currency-wrapper');
-            if (wrapper && !wrapper.contains(e.target)) {
-                wrapper.classList.remove('open');
+            if (!wrapper?.contains(e.target)) {
+                wrapper?.classList.remove('open');
             }
         });
 
         function selectGateway(gateway) {
-            if (gateway === 'VIETQR') {
-                return;
-            }
+            if (gateway === 'VIETQR') return;
+
+            const config = CHECKOUT_GATEWAY_CONFIGS[gateway];
+            if (!config) return;
 
             selectedGateway = gateway;
 
             const currencyHint = document.getElementById('currency-hint');
             const trigger = document.getElementById('checkout-currency-trigger');
 
-            if (selectedGateway === 'VNPAY') {
-                if (trigger) trigger.classList.remove('disabled');
-                if (currencyHint) currencyHint.style.display = 'none';
-            } else if (selectedGateway === 'PAYPAL') {
-                selectCheckoutCurrency('USD');
-                if (trigger) trigger.classList.add('disabled');
-                if (currencyHint) {
-                    currencyHint.innerHTML = '<i class="fa-solid fa-circle-info"></i> PayPal chỉ hỗ trợ thanh toán bằng Đô la Mỹ (USD)';
-                    currencyHint.style.display = 'flex';
-                }
+            if (config.lockCurrency) {
+                selectCheckoutCurrency(config.lockCurrency);
+                trigger?.classList.add('disabled');
             } else {
-                if (trigger) trigger.classList.remove('disabled');
-                if (currencyHint) currencyHint.style.display = 'none';
+                trigger?.classList.remove('disabled');
+            }
+
+            if (currencyHint) {
+                if (config.hintText) {
+                    currencyHint.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${config.hintText}`;
+                    currencyHint.style.display = 'flex';
+                } else {
+                    currencyHint.style.display = 'none';
+                }
             }
 
             updateGatewayUI();
         }
 
         function updateGatewayUI() {
-            // Cards active state
             document.querySelectorAll('.gateway-item-mui').forEach(card => {
                 card.classList.remove('active', 'vnpay-selected', 'stripe-selected', 'paypal-selected');
             });
 
-            const activeCard = document.getElementById(`gateway-card-${selectedGateway}`);
-            if (activeCard) {
-                activeCard.classList.add('active');
-                if (selectedGateway === 'VNPAY') {
-                    activeCard.classList.add('vnpay-selected');
-                } else if (selectedGateway === 'STRIPE') {
-                    activeCard.classList.add('stripe-selected');
-                } else if (selectedGateway === 'PAYPAL') {
-                    activeCard.classList.add('paypal-selected');
-                }
-            }
+            const config = CHECKOUT_GATEWAY_CONFIGS[selectedGateway];
+            if (!config) return;
 
-            // Summary Card sync
+            const activeCard = document.getElementById(`gateway-card-${selectedGateway}`);
+            activeCard?.classList.add('active', config.cardClass);
+
             const gatewayDisplay = document.getElementById('selected-gateway-display');
             const checkoutBtn = document.getElementById('checkout-button');
             const checkoutBtnText = document.getElementById('checkout-btn-text');
 
-            if (selectedGateway === 'VNPAY') {
-                gatewayDisplay.textContent = 'VNPAY';
-                checkoutBtn.className = 'mui-pay-btn btn-vnpay';
-                checkoutBtnText.textContent = 'Thanh toán qua VNPAY';
-            } else if (selectedGateway === 'STRIPE') {
-                gatewayDisplay.textContent = 'Stripe Checkout';
-                checkoutBtn.className = 'mui-pay-btn btn-stripe';
-                checkoutBtnText.textContent = 'Thanh toán qua Stripe';
-            } else if (selectedGateway === 'PAYPAL') {
-                gatewayDisplay.textContent = 'PayPal Wallet';
-                checkoutBtn.className = 'mui-pay-btn btn-paypal';
-                checkoutBtnText.textContent = 'Thanh toán qua PayPal';
-            }
+            if (gatewayDisplay) gatewayDisplay.textContent = config.displayName;
+            if (checkoutBtn) checkoutBtn.className = config.btnClass;
+            if (checkoutBtnText) checkoutBtnText.textContent = config.btnText;
         }
 
         function handleDisabledGateway(gatewayName) {
@@ -413,42 +430,67 @@
         function showToast(message) {
             const toast = document.getElementById('checkout-toast');
             document.getElementById('toast-text').textContent = message;
-            toast.classList.add('active');
+            toast?.classList.add('active');
             setTimeout(() => {
-                toast.classList.remove('active');
+                toast?.classList.remove('active');
             }, 3000);
+        }
+
+        function createCartItemNode(item, currency) {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'cart-item';
+            itemElement.innerHTML = `
+                <div class="item-left">
+                    <div class="item-thumb-box">
+                        <i class="fa-solid fa-box"></i>
+                    </div>
+                    <div class="item-details">
+                        <span class="item-name">${item.name}</span>
+                        <span class="item-price">${formatCurrency(item.price, currency)}</span>
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <div class="mui-stepper">
+                        <button class="mui-stepper-btn" type="button" onclick="updateQuantity(${item.id}, -1)">-</button>
+                        <span class="mui-stepper-value">${item.quantity}</span>
+                        <button class="mui-stepper-btn" type="button" onclick="updateQuantity(${item.id}, 1)">+</button>
+                    </div>
+                    <button class="mui-icon-btn" type="button" onclick="removeItem(${item.id})" title="Xóa">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+            return itemElement;
+        }
+
+        function renderEmptyCart(selectedCurrency) {
+            document.getElementById('cart-empty-box').style.display = 'block';
+            document.getElementById('cart-items-container').style.display = 'none';
+            const pmCard = document.getElementById('payment-methods-card');
+            if (pmCard) pmCard.style.display = 'none';
+            document.getElementById('items-count-badge').textContent = '0 sản phẩm';
+            document.getElementById('total-items-text').textContent = '0';
+            document.getElementById('subtotal-amount').textContent = formatCurrency(0, selectedCurrency);
+            document.getElementById('total-amount').textContent = formatCurrency(0, selectedCurrency);
+            document.getElementById('checkout-button').disabled = true;
         }
 
         function updateCartUI() {
             const cartItemsContainer = document.getElementById('cart-items-container');
-            const cartEmptyBox = document.getElementById('cart-empty-box');
-            const paymentMethodsCard = document.getElementById('payment-methods-card');
-            const totalItemsText = document.getElementById('total-items-text');
-            const itemsCountBadge = document.getElementById('items-count-badge');
-            const subtotalAmount = document.getElementById('subtotal-amount');
-            const totalAmountElement = document.getElementById('total-amount');
-            const checkoutBtn = document.getElementById('checkout-button');
-            const selectedCurrency = document.getElementById('currency-select').value;
-
             if (!cartItemsContainer) return;
 
+            const selectedCurrency = document.getElementById('currency-select').value;
             cartItemsContainer.innerHTML = '';
 
             if (cart.length === 0) {
-                cartEmptyBox.style.display = 'block';
-                cartItemsContainer.style.display = 'none';
-                if (paymentMethodsCard) paymentMethodsCard.style.display = 'none';
-                itemsCountBadge.textContent = '0 sản phẩm';
-                totalItemsText.textContent = '0';
-                subtotalAmount.textContent = formatCurrency(0, selectedCurrency);
-                totalAmountElement.textContent = formatCurrency(0, selectedCurrency);
-                checkoutBtn.disabled = true;
+                renderEmptyCart(selectedCurrency);
                 return;
             }
 
-            cartEmptyBox.style.display = 'none';
+            document.getElementById('cart-empty-box').style.display = 'none';
             cartItemsContainer.style.display = 'flex';
-            if (paymentMethodsCard) paymentMethodsCard.style.display = 'block';
+            const pmCard = document.getElementById('payment-methods-card');
+            if (pmCard) pmCard.style.display = 'block';
 
             let totalQty = 0;
             let totalAmount = 0;
@@ -456,38 +498,14 @@
             cart.forEach(item => {
                 totalQty += item.quantity;
                 totalAmount += item.price * item.quantity;
-
-                const itemElement = document.createElement('div');
-                itemElement.className = 'cart-item';
-                itemElement.innerHTML = `
-                    <div class="item-left">
-                        <div class="item-thumb-box">
-                            <i class="fa-solid fa-box"></i>
-                        </div>
-                        <div class="item-details">
-                            <span class="item-name">${item.name}</span>
-                            <span class="item-price">${formatCurrency(item.price, selectedCurrency)}</span>
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <div class="mui-stepper">
-                            <button class="mui-stepper-btn" type="button" onclick="updateQuantity(${item.id}, -1)">-</button>
-                            <span class="mui-stepper-value">${item.quantity}</span>
-                            <button class="mui-stepper-btn" type="button" onclick="updateQuantity(${item.id}, 1)">+</button>
-                        </div>
-                        <button class="mui-icon-btn" type="button" onclick="removeItem(${item.id})" title="Xóa">
-                            <i class="fa-regular fa-trash-can"></i>
-                        </button>
-                    </div>
-                `;
-                cartItemsContainer.appendChild(itemElement);
+                cartItemsContainer.appendChild(createCartItemNode(item, selectedCurrency));
             });
 
-            itemsCountBadge.textContent = `${totalQty} sản phẩm`;
-            totalItemsText.textContent = totalQty;
-            subtotalAmount.textContent = formatCurrency(totalAmount, selectedCurrency);
-            totalAmountElement.textContent = formatCurrency(totalAmount, selectedCurrency);
-            checkoutBtn.disabled = false;
+            document.getElementById('items-count-badge').textContent = `${totalQty} sản phẩm`;
+            document.getElementById('total-items-text').textContent = totalQty;
+            document.getElementById('subtotal-amount').textContent = formatCurrency(totalAmount, selectedCurrency);
+            document.getElementById('total-amount').textContent = formatCurrency(totalAmount, selectedCurrency);
+            document.getElementById('checkout-button').disabled = false;
         }
 
         async function executeCheckout() {
@@ -497,15 +515,11 @@
             const overlay = document.getElementById('loading-overlay');
             const loadingText = document.getElementById('loading-text');
 
-            if (selectedGateway === 'VNPAY') {
-                loadingText.textContent = 'Đang kết nối cổng thanh toán VNPAY...';
-            } else if (selectedGateway === 'PAYPAL') {
-                loadingText.textContent = 'Đang kết nối cổng thanh toán PayPal...';
-            } else {
-                loadingText.textContent = 'Đang kết nối cổng thanh toán Stripe...';
+            const config = CHECKOUT_GATEWAY_CONFIGS[selectedGateway];
+            if (loadingText && config) {
+                loadingText.textContent = config.loadingText;
             }
-
-            overlay.classList.add('active');
+            overlay?.classList.add('active');
 
             const orderPayload = {
                 items: cart.map(item => ({
@@ -524,46 +538,46 @@
                 });
 
                 if (!orderResponse.ok) {
-                    overlay.classList.remove('active');
+                    overlay?.classList.remove('active');
                     showToast('Tạo đơn hàng thất bại. Vui lòng thử lại!');
                     return;
                 }
 
                 const orderResult = await orderResponse.json();
-                const orderCode = orderResult.data.orderCode;
+                const orderCode = orderResult?.data?.orderCode;
 
                 // 2. Khởi tạo thanh toán với cổng được chọn
-                const checkoutPayload = {
-                    orderCode: orderCode,
-                    paymentGateway: selectedGateway
-                };
-
                 const checkoutResponse = await fetch('/api/payments/initiate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(checkoutPayload)
+                    body: JSON.stringify({
+                        orderCode,
+                        paymentGateway: selectedGateway
+                    })
                 });
 
                 if (!checkoutResponse.ok) {
-                    const errData = await checkoutResponse.json().catch(() => null);
-                    const errMsg = errData?.message || `Không thể kết nối cổng thanh toán ${selectedGateway}!`;
-                    overlay.classList.remove('active');
+                    let errMsg = `Không thể kết nối cổng thanh toán ${selectedGateway}!`;
+                    try {
+                        const errData = await checkoutResponse.json();
+                        if (errData?.message) errMsg = errData.message;
+                    } catch {
+                        // Non-JSON response, fallback
+                    }
+                    overlay?.classList.remove('active');
                     showToast(errMsg);
                     return;
                 }
 
                 const checkoutResult = await checkoutResponse.json();
-                const paymentUrl = checkoutResult.data.paymentUrl;
-
-                // Xóa giỏ hàng local
-                cart = [];
-                localStorage.setItem('cart', JSON.stringify(cart));
-
-                // Chuyển hướng sang cổng thanh toán
-                window.location.href = paymentUrl;
+                if (checkoutResult?.data?.paymentUrl) {
+                    cart = [];
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    window.location.href = checkoutResult.data.paymentUrl;
+                }
 
             } catch (error) {
-                overlay.classList.remove('active');
+                overlay?.classList.remove('active');
                 showToast('Lỗi kết nối hệ thống. Vui lòng thử lại!');
             }
         }

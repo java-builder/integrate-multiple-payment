@@ -289,9 +289,9 @@
         });
 
         function addToCart(button) {
-            const id = parseInt(button.getAttribute('data-id'));
-            const name = button.getAttribute('data-name');
-            const price = parseFloat(button.getAttribute('data-price'));
+            const id = Number.parseInt(button.dataset.id, 10);
+            const name = button.dataset.name;
+            const price = Number.parseFloat(button.dataset.price);
 
             const existingItem = cart.find(item => item.id === id);
             if (existingItem) {

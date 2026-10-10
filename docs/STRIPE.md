@@ -5,23 +5,24 @@ Tài liệu hướng dẫn chi tiết toàn bộ quy trình tích hợp cổng t
 ---
 
 ## 📌 Mục Lục
-1. [Tài liệu chính thức & Tài nguyên Stripe](#1-tài-liệu-chính-thức--tài-nguyên-stripe)
-2. [Kiến trúc & Luồng hoạt động (Sequence Diagram)](#2-kiến-trúc--luồng-hoạt-động-sequence-diagram)
-3. [Môi trường Thử nghiệm & Thông tin thẻ Test](#3-môi-trường-thử-nghiệm--thông-tin-thẻ-test)
-4. [Cấu hình tham số Spring Boot (application.yaml & pom.xml)](#4-cấu-hình-tham-số-spring-boot-applicationyaml--pomxml)
-5. [Cấu trúc mã nguồn & Triển khai chi tiết (Strategy Pattern)](#5-cấu-trúc-mã-nguồn--triển-khai-chi-tiết-strategy-pattern)
-   * [5.1. Cấu hình StripeClient Bean (StripeClientConfiguration)](#51-cấu-hình-stripeclient-bean-stripeclientconfiguration)
-   * [5.2. Khế ước chung (PaymentStrategy & PaymentGatewayCommand)](#52-khế-ước-chung-paymentstrategy--paymentgatewaycommand)
-   * [5.3. Chiến lược thanh toán Stripe (StripePaymentStrategy)](#53-chiến-lược-thanh-toán-stripe-stripepaymentstrategy)
-   * [5.4. Nhà máy khởi tạo (PaymentStrategyFactory)](#54-nhà-máy-khởi-tạo-paymentstrategyfactory)
-   * [5.5. Tầng nghiệp vụ thanh toán (PaymentService)](#55-tầng-nghiệp-vụ-thanh-toán-paymentservice)
-   * [5.6. Lớp API tiếp nhận (PaymentController)](#56-lớp-api-tiếp-nhận-paymentcontroller)
-   * [5.7. Điều hướng kết quả thanh toán (ViewController)](#57-điều-hướng-kết-quả-thanh-toán-viewcontroller)
-6. [Quy chuẩn xử lý & Lưu ý sống còn](#6-quy-chuẩn-xử-lý--lưu-ý-sống-còn)
-7. [Hướng dẫn kiểm thử thực tế (Testing & API Requests)](#7-hướng-dẫn-kiểm-thử-thực-tế-testing--api-requests)
+1. [Tài liệu chính thức & Tài nguyên Stripe](#1-tai-lieu-chinh-thuc-tai-nguyen-stripe)
+2. [Kiến trúc & Luồng hoạt động (Sequence Diagram)](#2-kien-truc-luong-hoat-dong-sequence-diagram)
+3. [Môi trường Thử nghiệm & Thông tin thẻ Test](#3-moi-truong-thu-nghiem-thong-tin-the-test)
+4. [Cấu hình tham số Spring Boot (application.yaml & pom.xml)](#4-cau-hinh-tham-so-spring-boot-applicationyaml-pomxml)
+5. [Cấu trúc mã nguồn & Triển khai chi tiết (Strategy Pattern)](#5-cau-truc-ma-nguon-trien-khai-chi-tiet-strategy-pattern)
+   * [5.1. Cấu hình StripeClient Bean (StripeClientConfiguration)](#51-cau-hinh-stripeclient-bean-stripeclientconfiguration)
+   * [5.2. Khế ước chung (PaymentStrategy & PaymentGatewayCommand)](#52-khe-uoc-chung-paymentstrategy-paymentgatewaycommand)
+   * [5.3. Chiến lược thanh toán Stripe (StripePaymentStrategy)](#53-chien-luoc-thanh-toan-stripe-stripepaymentstrategy)
+   * [5.4. Nhà máy khởi tạo (PaymentStrategyFactory)](#54-nha-may-khoi-tao-paymentstrategyfactory)
+   * [5.5. Tầng nghiệp vụ thanh toán (PaymentService)](#55-tang-nghiep-vu-thanh-toan-paymentservice)
+   * [5.6. Lớp API tiếp nhận (PaymentController)](#56-lop-api-tiep-nhan-paymentcontroller)
+   * [5.7. Điều hướng kết quả thanh toán (ViewController)](#57-dieu-huong-ket-qua-thanh-toan-viewcontroller)
+6. [Quy chuẩn xử lý & Lưu ý sống còn](#6-quy-chuan-xu-ly-luu-y-song-con)
+7. [Hướng dẫn kiểm thử thực tế (Testing & API Requests)](#7-huong-dan-kiem-thu-thuc-te-testing-api-requests)
 
 ---
 
+<a id="1-tai-lieu-chinh-thuc-tai-nguyen-stripe"></a>
 ## 1. 📚 Tài liệu chính thức & Tài nguyên Stripe
 
 * **Trang chủ tài liệu kỹ thuật Stripe Docs:** [https://stripe.com/docs](https://stripe.com/docs)
@@ -35,6 +36,7 @@ Tài liệu hướng dẫn chi tiết toàn bộ quy trình tích hợp cổng t
 
 ---
 
+<a id="2-kien-truc-luong-hoat-dong-sequence-diagram"></a>
 ## 2. 🏗️ Kiến trúc & Luồng hoạt động (Sequence Diagram)
 
 Mô hình hoạt động của **Stripe Checkout Session** áp dụng kiến trúc **Redirect Flow** an toàn: Khách hàng không nhập thẻ trực tiếp trên máy chủ backend của ứng dụng mà chuyển hướng sang giao diện được chứng nhận chuẩn PCI-DSS của Stripe.
@@ -68,6 +70,7 @@ sequenceDiagram
 
 ---
 
+<a id="3-moi-truong-thu-nghiem-thong-tin-the-test"></a>
 ## 3. 🧪 Môi trường Thử nghiệm & Thông tin thẻ Test
 
 Stripe cung cấp chế độ **Test Mode** hoàn toàn miễn phí mà không cần kích hoạt tài khoản thật.
@@ -92,6 +95,7 @@ Khi giao diện Stripe Checkout hiện lên, bạn có thể sử dụng các s�
 
 ---
 
+<a id="4-cau-hinh-tham-so-spring-boot-applicationyaml-pomxml"></a>
 ## 4. ⚙️ Cấu hình tham số Spring Boot (application.yaml & pom.xml)
 
 ### 4.1. Thư viện phụ thuộc `pom.xml`
@@ -119,6 +123,7 @@ stripe:
 
 ---
 
+<a id="5-cau-truc-ma-nguon-trien-khai-chi-tiet-strategy-pattern"></a>
 ## 5. 💻 Cấu trúc mã nguồn & Triển khai chi tiết (Strategy Pattern)
 
 Hệ thống thanh toán được chuẩn hóa theo mô hình **Strategy Pattern**:
@@ -126,6 +131,7 @@ Hệ thống thanh toán được chuẩn hóa theo mô hình **Strategy Pattern
 * `PaymentService` chỉ điều phối và ủy quyền cho `PaymentStrategyFactory`.
 * Mỗi cổng thanh toán là một Bean độc lập triển khai `PaymentStrategy`.
 
+<a id="51-cau-hinh-stripeclient-bean-stripeclientconfiguration"></a>
 ### 5.1. Cấu hình StripeClient Bean (`StripeClientConfiguration.java`)
 Thay vì dùng biến static toàn cục cũ (`Stripe.apiKey = ...`), dự án sử dụng đối tượng `StripeClient` quản lý theo vòng đời Spring Bean:
 
@@ -159,6 +165,7 @@ public class StripeClientConfiguration {
 
 ---
 
+<a id="52-khe-uoc-chung-paymentstrategy-paymentgatewaycommand"></a>
 ### 5.2. Khế ước chung (`PaymentStrategy.java` & `PaymentGatewayCommand.java`)
 
 #### Giao diện chiến lược thanh toán:
@@ -212,6 +219,7 @@ public record PaymentGatewayCommand(
 
 ---
 
+<a id="53-chien-luoc-thanh-toan-stripe-stripepaymentstrategy"></a>
 ### 5.3. Chiến lược thanh toán Stripe (`StripePaymentStrategy.java`)
 
 ```java
@@ -333,6 +341,7 @@ public class StripePaymentStrategy implements PaymentStrategy {
 
 ---
 
+<a id="54-nha-may-khoi-tao-paymentstrategyfactory"></a>
 ### 5.4. Nhà máy khởi tạo (`PaymentStrategyFactory.java`)
 
 ```java
@@ -375,6 +384,7 @@ public class PaymentStrategyFactory {
 
 ---
 
+<a id="55-tang-nghiep-vu-thanh-toan-paymentservice"></a>
 ### 5.5. Tầng nghiệp vụ thanh toán (`PaymentService.java`)
 
 ```java
@@ -466,6 +476,7 @@ public class PaymentService {
 
 ---
 
+<a id="56-lop-api-tiep-nhan-paymentcontroller"></a>
 ### 5.6. Lớp API tiếp nhận (`PaymentController.java`)
 Cung cấp endpoint RESTful tiếp nhận yêu cầu khởi tạo thanh toán từ Frontend:
 
@@ -517,6 +528,7 @@ public class PaymentController {
 
 ---
 
+<a id="57-dieu-huong-ket-qua-thanh-toan-viewcontroller"></a>
 ### 5.7. Điều hướng kết quả thanh toán (`ViewController.java`)
 
 ```java
@@ -557,6 +569,7 @@ public class ViewController {
 
 ---
 
+<a id="6-quy-chuan-xu-ly-luu-y-song-con"></a>
 ## 6. ⚠️ Quy chuẩn xử lý & Lưu ý sống còn
 
 ### 6.1. Quy chuẩn tiền tệ Zero-Decimal (Zero-Decimal Currencies)
@@ -586,6 +599,7 @@ public class ViewController {
 
 ---
 
+<a id="7-huong-dan-kiem-thu-thuc-te-testing-api-requests"></a>
 ## 7. 🧪 Hướng dẫn kiểm thử thực tế (Testing & API Requests)
 
 ### Bước 1: Tạo đơn hàng mẫu
