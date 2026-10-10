@@ -120,11 +120,20 @@ GET http://localhost:8080/api/orders/code/ORD-XXXXXX
 ### PAYMENT ENDPOINTS
 ### ----------------------------------------------------
 
-### 1. Checkout Order (Stripe) (Replace orderCode with actual code from Order creation response)
-POST http://localhost:8080/api/payments/checkout
+### 1. Initiate Payment (Stripe) (Replace orderCode with actual code from Order creation response)
+POST http://localhost:8080/api/payments/initiate
 Content-Type: application/json
 
 {
   "orderCode": "ORD-XXXXXX",
   "paymentGateway": "STRIPE"
+}
+
+### 2. Initiate Payment (VNPAY) (Replace orderCode with actual code from Order creation response)
+POST http://localhost:8080/api/payments/initiate
+Content-Type: application/json
+
+{
+  "orderCode": "ORD-XXXXXX",
+  "paymentGateway": "VNPAY"
 }

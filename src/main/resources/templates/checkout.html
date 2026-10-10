@@ -4,80 +4,211 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thanh toán đơn hàng - JavaBuilder Store</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Roboto (MUI Default) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <link rel="stylesheet" th:href="@{/css/all.min.css}">
     <link rel="stylesheet" th:href="@{/css/checkout.css}">
 </head>
 <body>
 
-    <header>
-        <a href="/" class="logo">
-            <i class="fa-solid fa-cube"></i>
-            <span>JavaBuilder Store</span>
-        </a>
+    <!-- Header: MUI AppBar Style -->
+    <header class="mui-app-bar">
+        <div class="header-container">
+            <a href="/" class="logo">
+                <i class="fa-solid fa-cube"></i>
+                <span>JavaBuilder Store</span>
+            </a>
+            <div class="mui-security-badge">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Thanh toán bảo mật SSL</span>
+            </div>
+        </div>
     </header>
 
     <div class="container">
-        <a href="/" class="back-link">
-            <i class="fa-solid fa-arrow-left"></i> Quay lại cửa hàng
-        </a>
+        <!-- Breadcrumb Navigation -->
+        <div class="breadcrumb-nav">
+            <a href="/" class="back-link">
+                <i class="fa-solid fa-arrow-left"></i> Quay lại cửa hàng
+            </a>
+        </div>
 
         <div class="checkout-layout" id="checkout-layout">
-            <!-- Left Side: Items List -->
-            <div class="cart-list-card">
-                <div class="card-header">
-                    <h3 class="card-title">Đơn hàng của bạn</h3>
-                    <button class="clear-cart" onclick="clearCart()">Xóa giỏ hàng</button>
+            <!-- Left Column: Order Items & Payment Gateways -->
+            <div class="checkout-main-column">
+                
+                <!-- 1. Danh sách sản phẩm (MUI Paper) -->
+                <div class="mui-paper">
+                    <div class="mui-card-header">
+                        <div class="mui-card-title">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                            <span>Đơn hàng của bạn</span>
+                            <span class="mui-chip-count" id="items-count-badge">0 sản phẩm</span>
+                        </div>
+                        <button class="mui-text-btn" type="button" onclick="clearCart()">
+                            <i class="fa-regular fa-trash-can"></i> Xóa tất cả
+                        </button>
+                    </div>
+
+                    <div class="cart-items-wrapper" id="cart-items-container">
+                        <!-- Dynamic Cart Items Rendered Here -->
+                    </div>
+
+                    <div class="cart-empty-box" id="cart-empty-box" style="display: none;">
+                        <div class="cart-empty-icon">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                        <div class="cart-empty-title">Giỏ hàng đang trống</div>
+                        <p class="cart-empty-desc">Hãy quay lại cửa hàng để lựa chọn các sản phẩm ưng ý nhất nhé!</p>
+                        <a href="/" class="mui-contained-btn">
+                            <i class="fa-solid fa-store"></i> Khám phá sản phẩm
+                        </a>
+                    </div>
                 </div>
 
-                <div class="cart-items-wrapper" id="cart-items-container">
-                    <!-- Dynamic rendering -->
+                <!-- 2. Lựa chọn Phương thức thanh toán (MUI Paper + Authentic Logos) -->
+                <div class="mui-paper" id="payment-methods-card">
+                    <div class="mui-card-header">
+                        <div class="mui-card-title">
+                            <i class="fa-regular fa-credit-card"></i>
+                            <span>Phương thức thanh toán</span>
+                        </div>
+                        <span style="font-size: 11.5px; color: var(--mui-success); font-weight: 500; display: flex; align-items: center; gap: 4px;">
+                            <i class="fa-solid fa-check"></i> Đã kết nối Gateway
+                        </span>
+                    </div>
+
+                    <div class="gateway-list-mui">
+                        <!-- VNPAY (Active) -->
+                        <div class="gateway-item-mui active vnpay-selected" id="gateway-card-VNPAY" onclick="selectGateway('VNPAY')">
+                            <div class="mui-radio"></div>
+                            <div class="gateway-logo-container">
+                                <img th:src="@{/images/vnpay-logo.jpg}" src="/images/vnpay-logo.jpg" alt="VNPAY" loading="lazy">
+                            </div>
+                            <div class="gateway-details-col">
+                                <div class="gateway-row-title">
+                                    <span class="gateway-text-title">VNPAY Gateway</span>
+                                    <span class="mui-chip-tag chip-recommended">Khuyên dùng</span>
+                                </div>
+                                <div class="gateway-desc-text">Quét VNPAY-QR, Thẻ ATM 40+ ngân hàng nội địa & Thẻ quốc tế</div>
+                            </div>
+                        </div>
+
+                        <!-- Stripe (Active) -->
+                        <div class="gateway-item-mui" id="gateway-card-STRIPE" onclick="selectGateway('STRIPE')">
+                            <div class="mui-radio"></div>
+                            <div class="gateway-logo-container">
+                                <img th:src="@{/images/stripe.webp}" src="/images/stripe.webp" alt="Stripe" loading="lazy">
+                            </div>
+                            <div class="gateway-details-col">
+                                <div class="gateway-row-title">
+                                    <span class="gateway-text-title">Stripe Checkout</span>
+                                    <span class="mui-chip-tag chip-intl">Quốc tế</span>
+                                </div>
+                                <div class="gateway-desc-text">Thanh toán toàn cầu thẻ tín dụng/ghi nợ Visa, MasterCard, AMEX, JCB</div>
+                            </div>
+                        </div>
+
+                        <!-- PayPal (Coming Soon) -->
+                        <div class="gateway-item-mui disabled" id="gateway-card-PAYPAL" onclick="handleDisabledGateway('Ví PayPal')">
+                            <div class="mui-radio"></div>
+                            <div class="gateway-logo-container">
+                                <img th:src="@{/images/paypal.webp}" src="/images/paypal.webp" alt="PayPal" loading="lazy">
+                            </div>
+                            <div class="gateway-details-col">
+                                <div class="gateway-row-title">
+                                    <span class="gateway-text-title">PayPal Wallet</span>
+                                    <span class="mui-chip-tag chip-soon">Sắp ra mắt</span>
+                                </div>
+                                <div class="gateway-desc-text">Thanh toán bảo vệ người mua thông qua tài khoản PayPal quốc tế</div>
+                            </div>
+                        </div>
+
+                        <!-- VietQR (Coming Soon) -->
+                        <div class="gateway-item-mui disabled" id="gateway-card-VIETQR" onclick="handleDisabledGateway('VietQR')">
+                            <div class="mui-radio"></div>
+                            <div class="gateway-logo-container">
+                                <img th:src="@{/images/vietqrpay-logo.webp}" src="/images/vietqrpay-logo.webp" alt="VietQR" loading="lazy">
+                            </div>
+                            <div class="gateway-details-col">
+                                <div class="gateway-row-title">
+                                    <span class="gateway-text-title">VietQR Napas 247</span>
+                                    <span class="mui-chip-tag chip-soon">Sắp ra mắt</span>
+                                </div>
+                                <div class="gateway-desc-text">Chuyển khoản liên ngân hàng 24/7 quét mã QR tự động xác nhận</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
 
-            <!-- Right Side: Order Summary -->
-            <div class="summary-card">
-                <h3 class="summary-title">Tóm tắt thanh toán</h3>
-                
-                <div class="currency-selector">
-                    <label for="currency-select">Tiền tệ thanh toán:</label>
-                    <select id="currency-select" onchange="updateCartUI()">
-                        <option value="VND">VND (đ)</option>
-                        <option value="USD">USD ($)</option>
-                    </select>
+            <!-- Right Column: Order Summary (MUI Paper) -->
+            <div class="mui-summary-card">
+                <div class="mui-summary-header">TÓM TẮT ĐƠN HÀNG</div>
+
+                <!-- Currency Outlined Box -->
+                <div class="mui-form-control">
+                    <div class="mui-outlined-select-box">
+                        <label for="currency-select">Tiền tệ thanh toán:</label>
+                        <select id="currency-select" onchange="onCurrencyChange()">
+                            <option value="VND">VND (₫)</option>
+                            <option value="USD">USD ($)</option>
+                        </select>
+                    </div>
+                    <div class="mui-helper-text" id="currency-hint" style="display: none;">
+                        <i class="fa-solid fa-circle-exclamation"></i> VNPAY hỗ trợ thanh toán bằng VND
+                    </div>
                 </div>
 
-                <div class="summary-row">
-                    <span>Tổng số sản phẩm:</span>
-                    <span id="total-qty">0</span>
-                </div>
-                
-                <div class="summary-row">
-                    <span>Phương thức:</span>
-                    <strong>Stripe Checkout</strong>
+                <div class="mui-line-items">
+                    <div class="mui-line-row">
+                        <span>Tạm tính (<span id="total-items-text">0</span> sản phẩm):</span>
+                        <strong id="subtotal-amount">0 ₫</strong>
+                    </div>
+                    <div class="mui-line-row">
+                        <span>Phí vận chuyển:</span>
+                        <strong style="color: var(--mui-success);">Miễn phí</strong>
+                    </div>
+                    <div class="mui-line-row">
+                        <span>Cổng thanh toán:</span>
+                        <strong id="selected-gateway-display">VNPAY</strong>
+                    </div>
+                    <div class="mui-line-row mui-total-row">
+                        <span>Tổng thanh toán:</span>
+                        <strong id="total-amount">0 ₫</strong>
+                    </div>
                 </div>
 
-                <div class="summary-row total">
-                    <span>Cần thanh toán:</span>
-                    <span id="total-amount">0 ₫</span>
-                </div>
-                
-                <button class="checkout-btn" id="checkout-button" disabled onclick="checkoutWithStripe()">
-                    <i class="fa-brands fa-stripe"></i> Tiến hành thanh toán
+                <!-- MUI Contained Action Button (Vuông vắn) -->
+                <button class="mui-pay-btn btn-vnpay" id="checkout-button" disabled type="button" onclick="executeCheckout()">
+                    <i class="fa-solid fa-lock"></i>
+                    <span id="checkout-btn-text">Thanh toán qua VNPAY</span>
                 </button>
+
+                <div class="mui-trust-row">
+                    <span><i class="fa-solid fa-shield-halved"></i> Bảo mật chuẩn PCI-DSS</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loading-overlay">
-        <div class="spinner"></div>
-        <div class="loading-text">Đang kết nối cổng thanh toán Stripe...</div>
+    <!-- Floating Toast (MUI Snackbar Style) -->
+    <div class="mui-snackbar" id="checkout-toast">
+        <i class="fa-solid fa-circle-info"></i>
+        <span id="toast-text">Thông báo</span>
+    </div>
+
+    <!-- Loading Overlay (MUI Backdrop Style) -->
+    <div class="mui-backdrop" id="loading-overlay">
+        <div class="mui-circular-progress"></div>
+        <div class="mui-backdrop-text" id="loading-text">Đang kết nối cổng thanh toán VNPAY...</div>
     </div>
 
     <script>
         let cart = [];
+        let selectedGateway = 'VNPAY';
 
         window.addEventListener('DOMContentLoaded', () => {
             const savedCart = localStorage.getItem('cart');
@@ -85,6 +216,7 @@
                 cart = JSON.parse(savedCart);
             }
             updateCartUI();
+            updateGatewayUI();
         });
 
         function updateQuantity(id, delta) {
@@ -106,6 +238,7 @@
         }
 
         function clearCart() {
+            if (cart.length === 0) return;
             cart = [];
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCartUI();
@@ -120,29 +253,114 @@
             }
         }
 
+        function onCurrencyChange() {
+            const currencySelect = document.getElementById('currency-select');
+            if (selectedGateway === 'VNPAY' && currencySelect.value === 'USD') {
+                showToast('Cổng VNPAY chỉ hỗ trợ thanh toán VND. Đã chuyển về VND.');
+                currencySelect.value = 'VND';
+            }
+            updateCartUI();
+        }
+
+        function selectGateway(gateway) {
+            if (gateway === 'PAYPAL' || gateway === 'VIETQR') {
+                return;
+            }
+
+            selectedGateway = gateway;
+
+            // VNPAY uses VND
+            const currencySelect = document.getElementById('currency-select');
+            const currencyHint = document.getElementById('currency-hint');
+
+            if (selectedGateway === 'VNPAY') {
+                if (currencySelect.value !== 'VND') {
+                    currencySelect.value = 'VND';
+                    updateCartUI();
+                }
+                currencyHint.style.display = 'flex';
+            } else {
+                currencyHint.style.display = 'none';
+            }
+
+            updateGatewayUI();
+        }
+
+        function updateGatewayUI() {
+            // Cards active state
+            document.querySelectorAll('.gateway-item-mui').forEach(card => {
+                card.classList.remove('active', 'vnpay-selected', 'stripe-selected');
+            });
+
+            const activeCard = document.getElementById(`gateway-card-${selectedGateway}`);
+            if (activeCard) {
+                activeCard.classList.add('active');
+                if (selectedGateway === 'VNPAY') {
+                    activeCard.classList.add('vnpay-selected');
+                } else if (selectedGateway === 'STRIPE') {
+                    activeCard.classList.add('stripe-selected');
+                }
+            }
+
+            // Summary Card sync
+            const gatewayDisplay = document.getElementById('selected-gateway-display');
+            const checkoutBtn = document.getElementById('checkout-button');
+            const checkoutBtnText = document.getElementById('checkout-btn-text');
+
+            if (selectedGateway === 'VNPAY') {
+                gatewayDisplay.textContent = 'VNPAY';
+                checkoutBtn.className = 'mui-pay-btn btn-vnpay';
+                checkoutBtnText.textContent = 'Thanh toán qua VNPAY';
+            } else if (selectedGateway === 'STRIPE') {
+                gatewayDisplay.textContent = 'Stripe Checkout';
+                checkoutBtn.className = 'mui-pay-btn btn-stripe';
+                checkoutBtnText.textContent = 'Thanh toán qua Stripe';
+            }
+        }
+
+        function handleDisabledGateway(gatewayName) {
+            showToast(`${gatewayName} đang trong quá trình tích hợp và sẽ sớm ra mắt!`);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('checkout-toast');
+            document.getElementById('toast-text').textContent = message;
+            toast.classList.add('active');
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 3000);
+        }
+
         function updateCartUI() {
             const cartItemsContainer = document.getElementById('cart-items-container');
-            const totalQtyElement = document.getElementById('total-qty');
+            const cartEmptyBox = document.getElementById('cart-empty-box');
+            const paymentMethodsCard = document.getElementById('payment-methods-card');
+            const totalItemsText = document.getElementById('total-items-text');
+            const itemsCountBadge = document.getElementById('items-count-badge');
+            const subtotalAmount = document.getElementById('subtotal-amount');
             const totalAmountElement = document.getElementById('total-amount');
             const checkoutBtn = document.getElementById('checkout-button');
             const selectedCurrency = document.getElementById('currency-select').value;
-            const checkoutLayout = document.getElementById('checkout-layout');
+
+            if (!cartItemsContainer) return;
 
             cartItemsContainer.innerHTML = '';
 
             if (cart.length === 0) {
-                checkoutLayout.innerHTML = `
-                    <div class="cart-list-card" style="grid-column: span 2;">
-                        <div class="cart-empty">
-                            <i class="fa-solid fa-shopping-cart"></i>
-                            <p style="font-size: 16px; font-weight: 500; color: var(--text-main);">Giỏ hàng đang trống</p>
-                            <p style="font-size: 14px; margin-bottom: 10px;">Vui lòng quay lại cửa hàng để lựa chọn các sản phẩm phù hợp.</p>
-                            <a href="/" class="shop-btn">Quay lại cửa hàng</a>
-                        </div>
-                    </div>
-                `;
+                cartEmptyBox.style.display = 'block';
+                cartItemsContainer.style.display = 'none';
+                if (paymentMethodsCard) paymentMethodsCard.style.display = 'none';
+                itemsCountBadge.textContent = '0 sản phẩm';
+                totalItemsText.textContent = '0';
+                subtotalAmount.textContent = formatCurrency(0, selectedCurrency);
+                totalAmountElement.textContent = formatCurrency(0, selectedCurrency);
+                checkoutBtn.disabled = true;
                 return;
             }
+
+            cartEmptyBox.style.display = 'none';
+            cartItemsContainer.style.display = 'flex';
+            if (paymentMethodsCard) paymentMethodsCard.style.display = 'block';
 
             let totalQty = 0;
             let totalAmount = 0;
@@ -154,32 +372,49 @@
                 const itemElement = document.createElement('div');
                 itemElement.className = 'cart-item';
                 itemElement.innerHTML = `
-                    <div class="item-details">
-                        <span class="item-name">${item.name}</span>
-                        <span class="item-price">${formatCurrency(item.price, selectedCurrency)}</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <div class="quantity-controls">
-                            <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
-                            <span class="item-qty">${item.quantity}</span>
-                            <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+                    <div class="item-left">
+                        <div class="item-thumb-box">
+                            <i class="fa-solid fa-box"></i>
                         </div>
-                        <i class="fa-solid fa-trash-can remove-btn" onclick="removeItem(${item.id})"></i>
+                        <div class="item-details">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-price">${formatCurrency(item.price, selectedCurrency)}</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <div class="mui-stepper">
+                            <button class="mui-stepper-btn" type="button" onclick="updateQuantity(${item.id}, -1)">-</button>
+                            <span class="mui-stepper-value">${item.quantity}</span>
+                            <button class="mui-stepper-btn" type="button" onclick="updateQuantity(${item.id}, 1)">+</button>
+                        </div>
+                        <button class="mui-icon-btn" type="button" onclick="removeItem(${item.id})" title="Xóa">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
                     </div>
                 `;
                 cartItemsContainer.appendChild(itemElement);
             });
 
-            totalQtyElement.textContent = totalQty;
+            itemsCountBadge.textContent = `${totalQty} sản phẩm`;
+            totalItemsText.textContent = totalQty;
+            subtotalAmount.textContent = formatCurrency(totalAmount, selectedCurrency);
             totalAmountElement.textContent = formatCurrency(totalAmount, selectedCurrency);
             checkoutBtn.disabled = false;
         }
 
-        async function checkoutWithStripe() {
+        async function executeCheckout() {
             if (cart.length === 0) return;
 
             const selectedCurrency = document.getElementById('currency-select').value;
             const overlay = document.getElementById('loading-overlay');
+            const loadingText = document.getElementById('loading-text');
+
+            if (selectedGateway === 'VNPAY') {
+                loadingText.textContent = 'Đang kết nối cổng thanh toán VNPAY...';
+            } else {
+                loadingText.textContent = 'Đang kết nối cổng thanh toán Stripe...';
+            }
+
             overlay.classList.add('active');
 
             const orderPayload = {
@@ -191,54 +426,53 @@
             };
 
             try {
+                // 1. Tạo đơn hàng
                 const orderResponse = await fetch('/api/orders', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderPayload)
                 });
 
                 if (!orderResponse.ok) {
                     overlay.classList.remove('active');
-                    alert('Đặt hàng thất bại. Vui lòng thử lại!');
+                    showToast('Tạo đơn hàng thất bại. Vui lòng thử lại!');
                     return;
                 }
 
                 const orderResult = await orderResponse.json();
                 const orderCode = orderResult.data.orderCode;
 
+                // 2. Khởi tạo thanh toán với cổng được chọn
                 const checkoutPayload = {
                     orderCode: orderCode,
-                    paymentGateway: 'STRIPE'
+                    paymentGateway: selectedGateway
                 };
 
-                const checkoutResponse = await fetch('/api/payments/checkout', {
+                const checkoutResponse = await fetch('/api/payments/initiate', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(checkoutPayload)
                 });
 
                 if (!checkoutResponse.ok) {
                     overlay.classList.remove('active');
-                    alert('Không thể kết nối dịch vụ thanh toán Stripe!');
+                    showToast(`Không thể kết nối cổng thanh toán ${selectedGateway}!`);
                     return;
                 }
 
                 const checkoutResult = await checkoutResponse.json();
                 const paymentUrl = checkoutResult.data.paymentUrl;
 
-                // Clear cart locally
+                // Xóa giỏ hàng local
                 cart = [];
                 localStorage.setItem('cart', JSON.stringify(cart));
 
+                // Chuyển hướng sang cổng thanh toán
                 window.location.href = paymentUrl;
 
             } catch (error) {
                 overlay.classList.remove('active');
-                alert('Có lỗi xảy ra kết nối hệ thống. Vui lòng thử lại!');
+                showToast('Lỗi kết nối hệ thống. Vui lòng thử lại!');
             }
         }
     </script>

@@ -8,8 +8,7 @@ import java.util.List;
 
 public record CreateOrderRequest(
         @NotEmpty(message = "Order items cannot be empty")
-        @Valid
-        List<OrderItemRequest> items,
+        List<@Valid OrderItemRequest> items,
 
         @NotNull(message = "Currency cannot be null")
         Currency currency

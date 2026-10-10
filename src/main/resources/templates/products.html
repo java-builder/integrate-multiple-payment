@@ -3,71 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JavaBuilder Store - Sản phẩm</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>JavaBuilder Store - Danh sách sản phẩm</title>
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <link rel="stylesheet" th:href="@{/css/all.min.css}">
     <link rel="stylesheet" th:href="@{/css/products.css}">
 </head>
 <body>
 
-    <header>
-        <a href="/" class="logo">
-            <i class="fa-solid fa-cube"></i>
-            <span>JavaBuilder Store</span>
-        </a>
-        <a href="/checkout" class="cart-link">
-            <i class="fa-solid fa-shopping-bag"></i>
-            <span>Giỏ hàng</span>
-            <div class="cart-count" id="cart-count">0</div>
-        </a>
+    <!-- MUI AppBar -->
+    <header class="mui-app-bar">
+        <div class="mui-toolbar">
+            <a href="/" class="mui-logo">
+                <span class="logo-icon"><i class="fa-solid fa-cube"></i></span>
+                <span class="logo-text">JavaBuilder <span>Store</span></span>
+            </a>
+            
+            <a href="/checkout" class="mui-cart-btn" id="header-cart-btn">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span class="cart-label">Giỏ hàng</span>
+                <span class="mui-badge" id="cart-count">0</span>
+            </a>
+        </div>
     </header>
 
-    <div class="container">
-        <h2 class="section-title">Sản phẩm nổi bật</h2>
+    <main class="mui-main-container">
+        <!-- Section Header -->
+        <div class="section-header">
+            <div>
+                <h1 class="section-title">Danh mục sản phẩm</h1>
+                <p class="section-subtitle">Hệ thống sản phẩm công nghệ cao & linh kiện chính hãng tại JavaBuilder</p>
+            </div>
+            <div class="product-stats">
+                <span class="stats-chip"><i class="fa-solid fa-boxes-stacked"></i> <span th:text="${#lists.size(products)}">0</span> sản phẩm</span>
+            </div>
+        </div>
         
+        <!-- Product Grid -->
         <div class="products-grid">
-            <div class="product-card" th:each="product : ${products}">
-                <div class="product-image-container">
+            <div class="mui-card" th:each="product : ${products}">
+                <div class="mui-card-media">
                     <img th:if="${product.imageUrl != null && !product.imageUrl.isEmpty()}" 
                          th:src="${product.imageUrl}" 
-                         th:alt="${product.name}">
-                    <i th:unless="${product.imageUrl != null && !product.imageUrl.isEmpty()}" 
-                       class="fa-solid fa-image product-image-placeholder"></i>
+                         th:alt="${product.name}"
+                         loading="lazy">
+                    <div th:unless="${product.imageUrl != null && !product.imageUrl.isEmpty()}" 
+                         class="media-placeholder">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <span class="stock-badge" th:classappend="${product.quantity > 0 ? 'in-stock' : 'out-of-stock'}">
+                        <i class="fa-solid fa-circle" style="font-size: 6px;"></i>
+                        <span th:text="${product.quantity > 0 ? 'Còn hàng (' + product.quantity + ')' : 'Hết hàng'}">Còn hàng</span>
+                    </span>
                 </div>
                 
-                <div class="product-info">
-                    <h3 class="product-name" th:text="${product.name}">Tên sản phẩm</h3>
-                    <p class="product-desc" th:text="${product.description}">Mô tả sản phẩm</p>
-                    <div class="product-price" th:data-price="${product.price}" 
-                         th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
-                </div>
-                
-                <div class="product-meta">
-                    <span>Kho: <strong th:text="${product.quantity}">10</strong> sản phẩm</span>
-                    <span>Hỗ trợ trả góp 0%</span>
-                </div>
-                
-                <div class="card-actions">
-                    <a th:href="@{/products/{id}(id=${product.id})}" class="action-btn btn-secondary">
-                        Chi tiết
+                <div class="mui-card-body">
+                    <a th:href="@{/products/{id}(id=${product.id})}" class="product-title-link">
+                        <h2 class="product-title" th:text="${product.name}">Tên sản phẩm</h2>
                     </a>
-                    <button class="action-btn btn-primary" 
+                    <p class="product-description" th:text="${product.description}">Mô tả sản phẩm</p>
+                    
+                    <div class="price-container">
+                        <span class="price-label">Giá niêm yết:</span>
+                        <div class="product-price" 
+                             th:data-price="${product.price}" 
+                             th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+                    </div>
+                    
+                    <div class="product-chips">
+                        <span class="chip-item"><i class="fa-solid fa-shield-halved"></i> Chính hãng</span>
+                        <span class="chip-item"><i class="fa-solid fa-bolt"></i> Giao ngay</span>
+                    </div>
+                </div>
+                
+                <div class="mui-card-actions">
+                    <a th:href="@{/products/{id}(id=${product.id})}" class="mui-btn mui-btn-outlined">
+                        <i class="fa-solid fa-eye"></i> Chi tiết
+                    </a>
+                    <button class="mui-btn mui-btn-contained" 
                             th:data-id="${product.id}" 
                             th:data-name="${product.name}" 
                             th:data-price="${product.price}"
                             onclick="addToCart(this)">
-                        Thêm vào giỏ
+                        <i class="fa-solid fa-cart-plus"></i> Thêm giỏ
                     </button>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <i class="fa-solid fa-circle-check"></i>
-        <span id="toast-message">Đã thêm vào giỏ hàng!</span>
+    <!-- MUI Snackbar Notification -->
+    <div class="mui-snackbar" id="toast">
+        <div class="snackbar-content">
+            <i class="fa-solid fa-circle-check snackbar-icon"></i>
+            <span id="toast-message">Đã thêm vào giỏ hàng!</span>
+        </div>
+        <button class="snackbar-action" onclick="window.location.href='/checkout'">THANH TOÁN</button>
     </div>
 
     <script>
@@ -101,7 +135,8 @@
         }
 
         function updateCartBadge() {
-            document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-count').textContent = count;
         }
 
         function showToast(message) {
@@ -110,7 +145,7 @@
             toast.classList.add('active');
             setTimeout(() => {
                 toast.classList.remove('active');
-            }, 2500);
+            }, 3000);
         }
     </script>
 </body>

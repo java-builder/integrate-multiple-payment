@@ -1,11 +1,10 @@
-package com.javabuilder.stripe.service;
+package com.javabuilder.stripe.strategy.stripe;
 
 import com.javabuilder.stripe.common.Currency;
-import com.javabuilder.stripe.dto.request.CreateLinkPaymentRequest;
-import com.javabuilder.stripe.entity.Order;
-import com.javabuilder.stripe.entity.OrderDetail;
-import com.javabuilder.stripe.entity.Product;
-import com.javabuilder.stripe.repository.OrderRepository;
+import com.javabuilder.stripe.common.PaymentGateway;
+import com.javabuilder.stripe.dto.response.PaymentGatewayResponse;
+import com.javabuilder.stripe.strategy.PaymentStrategy;
+import com.javabuilder.stripe.strategy.dto.PaymentGatewayCommand;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
@@ -14,15 +13,14 @@ import com.stripe.param.checkout.SessionCreateParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
-@Service
+@Component
 @RequiredArgsConstructor
-@Slf4j(topic = "STRIPE-SERVICE")
-public class StripePaymentService {
+@Slf4j(topic = "STRIPE-PAYMENT-STRATEGY")
+public class StripePaymentStrategy implements PaymentStrategy {
 
     @Value("${stripe.success-url}")
     private String successUrl;
@@ -31,44 +29,47 @@ public class StripePaymentService {
     private String cancelUrl;
 
     private final StripeClient stripeClient;
-    private final OrderRepository orderRepository;
 
-    @Transactional(rollbackFor = Exception.class)
-    public Session createCheckoutSession(CreateLinkPaymentRequest request) {
-        Order order = orderRepository.findOrderWithOrderDetailsByOrderCode(request.orderCode())
-                .orElseThrow(() -> new RuntimeException("Order not found with code: " + request.orderCode()));
+    @Override
+    public PaymentGateway getPaymentGateway() {
+        return PaymentGateway.STRIPE;
+    }
 
+    @Override
+    public PaymentGatewayResponse processPayment(PaymentGatewayCommand command) {
         SessionCreateParams.Builder sessionBuilder = SessionCreateParams.builder()
                 .setSuccessUrl(successUrl + "?session_id={CHECKOUT_SESSION_ID}")
                 .setCancelUrl(cancelUrl)
-                .setClientReferenceId(order.getOrderCode())
-                .putMetadata("orderCode", order.getOrderCode())
+                .setClientReferenceId(command.orderCode())
+                .putMetadata("orderCode", command.orderCode())
                 .setMode(SessionCreateParams.Mode.PAYMENT);
 
-        for (OrderDetail detail : order.getOrderDetails()) {
-            Product product = detail.getProduct();
-            Long itemAmount = toStripeAmount(detail.getPrice(), order.getCurrency());
+        for (PaymentGatewayCommand.LineItem lineItem : command.lineItems()) {
+            Long itemAmount = toStripeAmount(lineItem.unitPrice(), command.currency());
 
             sessionBuilder.addLineItem(SessionCreateParams.LineItem.builder()
-                    .setQuantity(detail.getQuantity().longValue())
+                    .setQuantity(lineItem.quantity().longValue())
                     .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
-                            .setCurrency(order.getCurrency().toStripeCode())
+                            .setCurrency(command.currency().toStripeCode())
                             .setUnitAmount(itemAmount)
                             .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName(product.getName())
+                                    .setName(lineItem.name())
                                     .build())
                             .build())
                     .build());
         }
 
         SessionCreateParams params = sessionBuilder.build();
-
         RequestOptions options = RequestOptions.builder()
-                .setIdempotencyKey("checkout-" + order.getOrderCode())
+                .setIdempotencyKey("checkout-" + command.orderCode())
                 .build();
 
         try {
-            return stripeClient.v1().checkout().sessions().create(params, options);
+            Session session = stripeClient.v1().checkout().sessions().create(params, options);
+            return PaymentGatewayResponse.builder()
+                    .gatewayTransactionId(session.getId())
+                    .paymentUrl(session.getUrl())
+                    .build();
         } catch (StripeException e) {
             log.error("Stripe Checkout Session creation failed", e);
             throw new RuntimeException("Stripe integration failed", e);
@@ -76,8 +77,11 @@ public class StripePaymentService {
     }
 
     private Long toStripeAmount(BigDecimal amount, Currency currency) {
+        if (amount == null) {
+            return 0L;
+        }
         return currency.isZeroDecimal() ?
-                amount.longValueExact() :
-                amount.multiply(BigDecimal.valueOf(100)).longValueExact();
+                amount.setScale(0, RoundingMode.HALF_UP).longValue() :
+                amount.multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP).longValue();
     }
 }

@@ -1,386 +1,838 @@
+/* ==========================================================================
+   Material-UI (MUI) Clean Theme - JavaBuilder Store Checkout
+   Design Specs:
+   - Geometry: Crisp, square-ish (border-radius: 4px - 6px)
+   - Typography: Roboto (MUI standard), structured hierarchy
+   - Surfaces: MUI Paper with subtle outline & elevation
+   - Payment Brands: Authentic vector logos & brand accents
+   ========================================================================== */
+
 :root {
-    --bg-primary: #f8fafc;
-    --bg-card: #ffffff;
-    --border-color: #e2e8f0;
-    --border-hover: #cbd5e1;
-    --primary: #4f46e5;
-    --primary-glow: rgba(79, 70, 229, 0.08);
-    --stripe: #635bff;
-    --stripe-glow: rgba(99, 91, 255, 0.08);
-    --text-main: #0f172a;
-    --text-muted: #64748b;
+    /* MUI Palette */
+    --mui-primary: #1976d2;
+    --mui-primary-hover: #1565c0;
+    --mui-primary-light: #e3f2fd;
+    --mui-secondary: #9c27b0;
+    --mui-success: #2e7d32;
+    --mui-success-light: #edf7ed;
+    --mui-warning: #ed6c02;
+    --mui-warning-light: #fff4e5;
+    --mui-error: #d32f2f;
+    --mui-error-light: #fdeded;
+    
+    /* Backgrounds & Text */
+    --mui-bg-default: #f4f6f8;
+    --mui-bg-paper: #ffffff;
+    --mui-text-primary: rgba(0, 0, 0, 0.87);
+    --mui-text-secondary: rgba(0, 0, 0, 0.6);
+    --mui-text-disabled: rgba(0, 0, 0, 0.38);
+    --mui-divider: rgba(0, 0, 0, 0.12);
+    --mui-border: #e0e0e0;
+    --mui-border-hover: rgba(0, 0, 0, 0.4);
+
+    /* Brand Accents */
+    --vnpay-blue: #005baa;
+    --stripe-purple: #635bff;
+    
+    /* MUI Geometry: Vuông vắn */
+    --mui-radius-xs: 2px;
+    --mui-radius-sm: 4px;
+    --mui-radius-md: 6px;
+    
+    /* MUI Elevations */
+    --mui-shadow-1: 0px 2px 1px -1px rgba(0,0,0,0.1), 0px 1px 1px 0px rgba(0,0,0,0.07), 0px 1px 3px 0px rgba(0,0,0,0.06);
+    --mui-shadow-2: 0px 3px 1px -2px rgba(0,0,0,0.12), 0px 2px 2px 0px rgba(0,0,0,0.08), 0px 1px 5px 0px rgba(0,0,0,0.06);
+    --mui-shadow-4: 0px 2px 4px -1px rgba(0,0,0,0.12), 0px 4px 5px 0px rgba(0,0,0,0.08), 0px 1px 10px 0px rgba(0,0,0,0.06);
 }
 
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
 }
 
 body {
-    background-color: var(--bg-primary);
-    color: var(--text-main);
+    background-color: var(--mui-bg-default);
+    color: var(--mui-text-primary);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    -webkit-font-smoothing: antialiased;
 }
 
-header {
+/* ==========================================================================
+   Header - MUI AppBar style
+   ========================================================================== */
+
+header.mui-app-bar {
+    background: #ffffff;
+    border-bottom: 1px solid var(--mui-divider);
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+}
+
+.header-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 12px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 8%;
-    border-bottom: 1px solid var(--border-color);
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(8px);
-    position: sticky;
-    top: 0;
-    z-index: 100;
 }
 
 .logo {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text-main);
     display: flex;
     align-items: center;
     gap: 8px;
     text-decoration: none;
+    color: var(--mui-text-primary);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
 }
 
 .logo i {
-    color: var(--primary);
+    color: var(--mui-primary);
+    font-size: 18px;
 }
 
+.mui-security-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mui-success);
+    background: var(--mui-success-light);
+    border: 1px solid rgba(46, 125, 50, 0.2);
+    border-radius: var(--mui-radius-sm);
+    padding: 4px 10px;
+    letter-spacing: 0.1px;
+}
+
+/* ==========================================================================
+   Page Layout & Container
+   ========================================================================== */
+
 .container {
-    width: 100%;
     max-width: 1100px;
-    margin: 30px auto;
-    padding: 0 4%;
+    margin: 0 auto;
+    padding: 20px 20px 50px;
+    width: 100%;
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+}
+
+.breadcrumb-nav {
+    margin-bottom: 16px;
 }
 
 .back-link {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    color: var(--text-muted);
+    gap: 6px;
+    color: var(--mui-text-secondary);
     text-decoration: none;
-    font-weight: 600;
-    font-size: 14px;
-    transition: color 0.2s ease;
-    width: fit-content;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.15s ease;
 }
 
 .back-link:hover {
-    color: var(--primary);
+    color: var(--mui-primary);
 }
 
 .checkout-layout {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 30px;
+    grid-template-columns: 1.38fr 1fr;
+    gap: 24px;
+    align-items: start;
 }
 
-.cart-list-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 18px;
-    padding: 30px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
+.checkout-main-column {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.card-header {
+/* ==========================================================================
+   MUI Paper / Card - Vuông vắn (border-radius: 6px)
+   ========================================================================== */
+
+.mui-paper {
+    background: var(--mui-bg-paper);
+    border: 1px solid var(--mui-border);
+    border-radius: var(--mui-radius-md);
+    box-shadow: var(--mui-shadow-1);
+    padding: 20px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.mui-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--mui-divider);
+    margin-bottom: 16px;
 }
 
-.card-title {
-    font-size: 20px;
+.mui-card-title {
+    font-size: 15px;
     font-weight: 700;
+    color: var(--mui-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.15px;
 }
 
-.clear-cart {
+.mui-card-title i {
+    color: var(--mui-primary);
+    font-size: 15px;
+}
+
+.mui-chip-count {
+    font-size: 11px;
+    font-weight: 600;
+    background: #f0f2f5;
+    color: var(--mui-text-secondary);
+    border: 1px solid var(--mui-border);
+    border-radius: var(--mui-radius-sm);
+    padding: 2px 7px;
+}
+
+.mui-text-btn {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: var(--mui-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    font-size: 13px;
-    transition: color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: var(--mui-radius-sm);
+    transition: all 0.15s ease;
 }
 
-.clear-cart:hover {
-    color: #ef4444;
+.mui-text-btn:hover {
+    color: var(--mui-error);
+    background: var(--mui-error-light);
 }
+
+/* ==========================================================================
+   Cart Items List - Clean MUI Table Style
+   ========================================================================== */
 
 .cart-items-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 8px;
 }
 
 .cart-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 15px;
-    padding: 15px;
-    background: #f8fafc;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
+    gap: 12px;
+    padding: 10px 14px;
+    background: #fafafa;
+    border: 1px solid #eeeeee;
+    border-radius: var(--mui-radius-sm);
+    transition: all 0.15s ease;
+}
+
+.cart-item:hover {
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+}
+
+.item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.item-thumb-box {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--mui-radius-sm);
+    background: #e0e0e0;
+    color: #757575;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
 }
 
 .item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.item-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--mui-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.item-price {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--mui-primary);
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* MUI Outlined Stepper (Vuông vắn) */
+.mui-stepper {
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #c4c4c4;
+    border-radius: var(--mui-radius-sm);
+    overflow: hidden;
+}
+
+.mui-stepper-btn {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--mui-text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.mui-stepper-btn:hover {
+    background: #eeeeee;
+}
+
+.mui-stepper-value {
+    min-width: 22px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mui-text-primary);
+}
+
+.mui-icon-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #9e9e9e;
+    border-radius: var(--mui-radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s ease;
+}
+
+.mui-icon-btn:hover {
+    color: var(--mui-error);
+    background: var(--mui-error-light);
+}
+
+/* Empty Cart State */
+.cart-empty-box {
+    text-align: center;
+    padding: 36px 16px;
+    color: var(--mui-text-secondary);
+}
+
+.cart-empty-icon {
+    font-size: 38px;
+    color: #bdbdbd;
+    margin-bottom: 10px;
+}
+
+.cart-empty-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--mui-text-primary);
+    margin-bottom: 4px;
+}
+
+.cart-empty-desc {
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.mui-contained-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--mui-primary);
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 8px 16px;
+    border-radius: var(--mui-radius-sm);
+    box-shadow: var(--mui-shadow-1);
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mui-contained-btn:hover {
+    background: var(--mui-primary-hover);
+    box-shadow: var(--mui-shadow-2);
+}
+
+/* ==========================================================================
+   Payment Gateway Cards (MUI Outlined Card + Authentic Brand Logos)
+   ========================================================================== */
+
+.gateway-list-mui {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gateway-item-mui {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 1.5px solid var(--mui-border);
+    border-radius: var(--mui-radius-sm); /* Vuông vắn 4px */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    position: relative;
+}
+
+.gateway-item-mui:hover:not(.disabled) {
+    border-color: #90caf9;
+    background: #fbfdff;
+}
+
+/* Active State */
+.gateway-item-mui.active {
+    border-color: var(--mui-primary);
+    background: #f7faff;
+    box-shadow: 0 0 0 1px var(--mui-primary);
+}
+
+.gateway-item-mui.active.vnpay-selected {
+    border-color: var(--vnpay-blue);
+    box-shadow: 0 0 0 1px var(--vnpay-blue);
+    background: #f6faff;
+}
+
+.gateway-item-mui.active.stripe-selected {
+    border-color: var(--stripe-purple);
+    box-shadow: 0 0 0 1px var(--stripe-purple);
+    background: #faf9ff;
+}
+
+/* Disabled State */
+.gateway-item-mui.disabled {
+    opacity: 0.55;
+    background: #fafafa;
+    border-color: #eeeeee;
+    cursor: not-allowed;
+}
+
+/* Material UI Radio */
+.mui-radio {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.54);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.gateway-item-mui.active .mui-radio {
+    border-color: var(--mui-primary);
+}
+
+.gateway-item-mui.active.vnpay-selected .mui-radio {
+    border-color: var(--vnpay-blue);
+}
+
+.gateway-item-mui.active.stripe-selected .mui-radio {
+    border-color: var(--stripe-purple);
+}
+
+.gateway-item-mui.active .mui-radio::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--mui-primary);
+}
+
+.gateway-item-mui.active.vnpay-selected .mui-radio::after {
+    background: var(--vnpay-blue);
+}
+
+.gateway-item-mui.active.stripe-selected .mui-radio::after {
+    background: var(--stripe-purple);
+}
+
+/* Gateway Brand Logo Container */
+.gateway-logo-container {
+    width: 90px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    border-radius: var(--mui-radius-sm);
+    padding: 3px 6px;
+}
+
+.gateway-logo-container svg,
+.gateway-logo-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.gateway-item-mui.disabled .gateway-logo-container {
+    filter: grayscale(1);
+    opacity: 0.7;
+}
+
+.gateway-details-col {
     flex: 1;
+    min-width: 0;
+}
+
+.gateway-row-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.gateway-text-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--mui-text-primary);
+}
+
+.gateway-desc-text {
+    font-size: 11.5px;
+    color: var(--mui-text-secondary);
+    line-height: 1.35;
+}
+
+/* MUI Chips - Vuông vắn */
+.mui-chip-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--mui-radius-sm); /* 4px */
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border: 1px solid transparent;
+}
+
+.chip-recommended {
+    background: #e6f0fa;
+    color: var(--vnpay-blue);
+    border-color: rgba(0, 91, 170, 0.2);
+}
+
+.chip-intl {
+    background: #f3f2ff;
+    color: var(--stripe-purple);
+    border-color: rgba(99, 91, 255, 0.2);
+}
+
+.chip-soon {
+    background: #f5f5f5;
+    color: #9e9e9e;
+    border-color: #e0e0e0;
+}
+
+/* ==========================================================================
+   Sidebar: Order Summary (MUI Outlined Card)
+   ========================================================================== */
+
+.mui-summary-card {
+    background: var(--mui-bg-paper);
+    border: 1px solid var(--mui-border);
+    border-radius: var(--mui-radius-md);
+    box-shadow: var(--mui-shadow-1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 75px;
+}
+
+.mui-summary-header {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--mui-text-primary);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--mui-divider);
+    letter-spacing: 0.15px;
+}
+
+.mui-form-control {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.item-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-main);
-}
-
-.item-price {
-    font-size: 13px;
-    color: var(--primary);
-    font-weight: 600;
-}
-
-.quantity-controls {
+.mui-outlined-select-box {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
     background: #ffffff;
-    padding: 4px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(0, 0, 0, 0.23);
+    border-radius: var(--mui-radius-sm);
+    padding: 7px 10px;
+    transition: border-color 0.15s ease;
 }
 
-.qty-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-main);
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+.mui-outlined-select-box:hover {
+    border-color: rgba(0, 0, 0, 0.87);
+}
+
+.mui-outlined-select-box label {
     font-size: 12px;
-    border-radius: 4px;
-    transition: background 0.2s ease;
+    color: var(--mui-text-secondary);
+    font-weight: 500;
 }
 
-.qty-btn:hover {
-    background: var(--bg-primary);
-}
-
-.item-qty {
-    font-size: 13px;
-    font-weight: 600;
-    min-width: 14px;
-    text-align: center;
-}
-
-.remove-btn {
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 6px;
-    font-size: 14px;
-    transition: color 0.2s ease;
-}
-
-.remove-btn:hover {
-    color: #ef4444;
-}
-
-.cart-empty {
-    text-align: center;
-    padding: 40px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    color: var(--text-muted);
-}
-
-.cart-empty i {
-    font-size: 48px;
-    opacity: 0.3;
-}
-
-.shop-btn {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 14px;
-    text-decoration: none;
-    box-shadow: 0 4px 12px var(--primary-glow);
-    transition: all 0.2s ease;
-}
-
-.shop-btn:hover {
-    background: #4338ca;
-}
-
-/* Summary Card */
-.summary-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 18px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    height: fit-content;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    gap: 16px;
-}
-
-.summary-title {
-    font-size: 18px;
-    font-weight: 700;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 12px;
-}
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    color: var(--text-muted);
-}
-
-.summary-row.total {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-main);
-    margin-top: 5px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-color);
-}
-
-.summary-row.total span:last-child {
-    color: var(--primary);
-}
-
-.currency-selector {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8fafc;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-.currency-selector label {
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-.currency-selector select {
+.mui-outlined-select-box select {
     background: transparent;
-    color: var(--text-main);
     border: none;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
+    color: var(--mui-text-primary);
     outline: none;
     cursor: pointer;
 }
 
-.checkout-btn {
-    width: 100%;
-    background: var(--stripe);
-    color: white;
-    border: none;
-    padding: 14px;
-    border-radius: 10px;
+.mui-helper-text {
+    font-size: 11px;
+    color: var(--mui-warning);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
+.mui-line-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.mui-line-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--mui-text-secondary);
+}
+
+.mui-line-row strong {
+    color: var(--mui-text-primary);
+    font-weight: 600;
+}
+
+.mui-total-row {
+    border-top: 1px dashed var(--mui-divider);
+    padding-top: 12px;
+    margin-top: 2px;
+}
+
+.mui-total-row span {
+    font-size: 14px;
     font-weight: 700;
-    font-size: 15px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    color: var(--mui-text-primary);
+}
+
+.mui-total-row strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--mui-primary);
+}
+
+/* MUI Contained Pay Button - Vuông vắn (border-radius: 4px) */
+.mui-pay-btn {
+    width: 100%;
+    height: 44px;
+    border: none;
+    border-radius: var(--mui-radius-sm);
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: 0 4px 10px rgba(99, 91, 255, 0.15);
+    cursor: pointer;
+    box-shadow: var(--mui-shadow-2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.checkout-btn:hover:not(:disabled) {
-    background: #544cf0;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 15px rgba(99, 91, 255, 0.25);
+.mui-pay-btn.btn-vnpay {
+    background: var(--vnpay-blue);
 }
 
-.checkout-btn:disabled {
-    opacity: 0.5;
+.mui-pay-btn.btn-vnpay:hover:not(:disabled) {
+    background: #004d91;
+    box-shadow: var(--mui-shadow-4);
+}
+
+.mui-pay-btn.btn-stripe {
+    background: var(--stripe-purple);
+}
+
+.mui-pay-btn.btn-stripe:hover:not(:disabled) {
+    background: #5348eb;
+    box-shadow: var(--mui-shadow-4);
+}
+
+.mui-pay-btn:disabled {
+    background: rgba(0, 0, 0, 0.12) !important;
+    color: rgba(0, 0, 0, 0.26) !important;
+    box-shadow: none !important;
     cursor: not-allowed;
-    box-shadow: none;
 }
 
-/* Loading Overlay */
-.loading-overlay {
+.mui-trust-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--mui-text-disabled);
+    padding-top: 2px;
+}
+
+.mui-trust-row span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Floating Toast (MUI Snackbar style) */
+.mui-snackbar {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.9);
+    bottom: 24px;
+    right: 24px;
+    background: #323232;
+    color: #ffffff;
+    padding: 10px 16px;
+    border-radius: var(--mui-radius-sm);
+    box-shadow: var(--mui-shadow-4);
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2000;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.mui-snackbar.active {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.mui-snackbar i {
+    color: #ff9800;
+}
+
+/* Loading Overlay (MUI Backdrop style) */
+.mui-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.88);
     backdrop-filter: blur(4px);
-    z-index: 1000;
+    z-index: 1200;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 12px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
 }
 
-.loading-overlay.active {
+.mui-backdrop.active {
     opacity: 1;
     pointer-events: auto;
 }
 
-.spinner {
-    width: 45px;
-    height: 45px;
-    border: 3px solid rgba(99, 91, 255, 0.1);
-    border-top: 3px solid var(--stripe);
+.mui-circular-progress {
+    width: 40px;
+    height: 40px;
+    border: 3.5px solid rgba(25, 118, 210, 0.15);
+    border-top: 3.5px solid var(--mui-primary);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: mui-spin 0.8s linear infinite;
 }
 
-.loading-text {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-main);
+.mui-backdrop-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--mui-text-primary);
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+@keyframes mui-spin {
+    to { transform: rotate(360deg); }
 }
 
-@media (max-width: 768px) {
+/* Responsive */
+@media (max-width: 860px) {
     .checkout-layout {
         grid-template-columns: 1fr;
+    }
+    .mui-summary-card {
+        position: static;
     }
 }

@@ -1,20 +1,31 @@
-# E-Commerce Stripe Integration (Spring Boot 4)
+# E-Commerce Multi-Gateway Payment Integration (Spring Boot 4, Stripe & VNPay)
 
-Dự án mẫu hướng dẫn tích hợp cổng thanh toán trực tuyến **Stripe** vào ứng dụng Spring Boot một cách bảo mật, chuyên nghiệp, áp dụng nguyên lý tách biệt luồng Đặt hàng (Order) và Thanh toán (Payment).
+Dự án mẫu hướng dẫn tích hợp hệ thống thanh toán trực tuyến đa cổng (**Stripe**, **VNPay**,...) vào ứng dụng Spring Boot 4 một cách chuyên nghiệp, áp dụng các **Design Pattern** chuẩn doanh nghiệp (**Strategy Pattern**, **Factory Pattern**), phân tách rõ ràng giữa luồng Đặt hàng (Order) và Khởi tạo thanh toán (Payment Initiation).
 
 ---
 
-## 📌 Giới thiệu dự án
+## 📌 Điểm nổi bật của kiến trúc
 
-Dự án này viết bằng Java để minh họa cách tích hợp cổng thanh toán quốc tế Stripe. Để hệ thống sạch và dễ mở rộng, chúng ta áp dụng kiến trúc **tách biệt nhiệm vụ**:
-* **Tạo đơn hàng trước:** Hệ thống trừ kho, lưu thông tin sản phẩm và giá cả thời điểm mua ở trạng thái `PENDING`.
-* **Thanh toán sau:** Người dùng bấm nút thanh toán mới tạo phiên làm việc với Stripe để lấy link redirect, giúp người dùng có thể đổi phương thức hoặc thanh toán lại nếu gặp lỗi mà không bị rác đơn hàng.
+1. **Áp dụng bộ đôi Strategy + Factory Pattern:**
+   * Dễ dàng cắm/rút hoặc mở rộng thêm cổng thanh toán mới (**VNPay**, **Stripe**, **PayPal**, **VietQR**) mà không làm sửa đổi code hiện tại (Tuân thủ nguyên tắc **Open/Closed Principle**).
+   * Tận dụng Spring IoC Container để tự động nạp tất cả các Strategy Bean (`StripePaymentStrategy`, `VnPayPaymentStrategy`) vào `Map` một cách linh hoạt.
+2. **Tách biệt ranh giới nghiệp vụ (Decoupled Architecture):**
+   * Tầng Strategy hoàn toàn độc lập với JPA Entities (`Order`, `Product`), chỉ giao tiếp thông qua hợp đồng dữ liệu chuẩn `PaymentGatewayCommand` và `LineItem`.
+3. **Phân tách 2 pha: Tạo đơn trước (Order) ➜ Khởi tạo thanh toán sau (Payment):**
+   * Cho phép khách hàng đổi phương thức thanh toán hoặc thử thanh toán lại khi bị từ chối thẻ mà không làm rác hay hủy đơn hàng.
+4. **Tối ưu hiệu năng & An toàn dữ liệu:**
+   * Tách biệt `@Transactional` khỏi các lời gọi mạng HTTP hoặc tạo checksum sang cổng thanh toán.
+   * Sử dụng **Idempotency Key** trên Stripe chống trừ tiền trùng lặp khi mạng lag.
+   * Xử lý chính xác thuật toán băm chữ ký số **HMAC-SHA512** bảo mật toàn vẹn dữ liệu cho VNPay (chuẩn API 2.1.0).
+   * Xử lý chuẩn tiền tệ quốc tế (**Zero-Decimal Currency**): Tự động quy đổi USD sang Cents (`* 100`), giữ nguyên VND cho Stripe; nhân 100 khử số thập phân cho VNPay.
 
 ### Công nghệ sử dụng:
 * **Backend:** Spring Boot 4.1.0, Spring Data JPA
 * **Java Version:** JDK 25
 * **Database:** MySQL 8.x
-* **Thanh toán:** Stripe Java SDK
+* **Cổng thanh toán:** 
+  * **Stripe:** Stripe Java SDK (v33.1.1)
+  * **VNPay:** VNPay Sandbox Gateway (v2.1.0, HMAC-SHA512 checksum)
 
 ---
 
@@ -30,13 +41,22 @@ Dự án đã có sẵn cấu hình Docker. Bạn mở Terminal tại thư mục
 docker-compose up -d
 ```
 
-### 3. Cấu hình Key của Stripe
-Mở tệp [application.yaml](./src/main/resources/application.yaml) và điền Secret Key của tài khoản Stripe Test của bạn:
+### 3. Cấu hình Cổng thanh toán (Stripe & VNPay)
+Mở tệp [application.yaml](./src/main/resources/application.yaml) và điền các thông số kết nối:
+
 ```yaml
+# Cấu hình Stripe Test
 stripe:
-  api-key: sk_test_YOUR_SECRET_KEY
+  api-key: ${STRIPE_API_KEY:sk_test_YOUR_SECRET_KEY}
   success-url: http://localhost:8080/api/payments/success
   cancel-url: http://localhost:8080/api/payments/cancel
+
+# Cấu hình VNPay Sandbox
+vnpay:
+  tmn-code: T3NIHXVR
+  secret-key: XFHCCKKDCCZKXNXIVGUKIVIWKGHMHVZU
+  vnp-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:8080/api/payments/vnpay-callback
 ```
 
 ### 4. Chạy ứng dụng
@@ -47,202 +67,189 @@ mvn clean spring-boot:run
 
 ---
 
-## 💳 Sơ đồ hoạt động của Stripe Checkout
+## 💳 Sơ đồ & Luồng hoạt động Cổng thanh toán
 
-Giao dịch được xử lý gián tiếp qua trang thanh toán an toàn của Stripe (Redirect Flow) để đảm bảo bảo mật thông tin thẻ của khách hàng:
+Cả hai cổng thanh toán đều hoạt động theo mô hình **Chuyển hướng an toàn (Redirect Flow)** để khách hàng thanh toán trực tiếp trên hạ tầng bảo mật của cổng:
 
+### 1. Sơ đồ Stripe Checkout
 ![Stripe Checkout Sequence Diagram](https://res.cloudinary.com/drdskl2up/image/upload/v1784366420/a9557fe0-4ba8-46f1-89fb-0baeaa8f8d8e.png)
+
+### 2. Luồng hoạt động Cổng thanh toán VNPay
+```text
+[Khách hàng] ──(1. Đặt hàng)──> [Backend: Tạo OrderCode]
+     │                                    │
+     │ <───(2. Trả về paymentUrl VNPay)───┤ (Ký số HMAC-SHA512 với vnp_HashSecret)
+     │
+     ├───(3. Chuyển hướng sang VNPay Sandbox: vpcpay.html)───> [Cổng VNPay]
+     │                                                             │
+     │    (Khách hàng quét QR hoặc nhập thẻ ATM NCB / Visa)       │
+     │                                                             │
+     │ <──(4. Xác thực thành công & Redirect về ReturnUrl)────────┘
+     │        (kèm vnp_ResponseCode=00 & vnp_SecureHash)
+     v
+[Backend: /api/payments/vnpay-callback] ──> [Hiển thị Trang Thành công (success.html)]
+```
 
 ---
 
-## 🛠️ Chi tiết các bước và mã nguồn tích hợp
-
-### Bước 1: Đăng ký & lấy Key thử nghiệm
-1. Truy cập trang **[Đăng ký Stripe](https://dashboard.stripe.com/register)** hoặc **[Đăng nhập Stripe](https://dashboard.stripe.com/login)** (khuyên dùng Đăng nhập bằng Google cho nhanh).
-2. Đi tới trang quản lý **[Stripe API Keys](https://dashboard.stripe.com/acct_1TuRF9JMfqNJ7ArA/test/apikeys)** để copy **Secret key** (mã `sk_test_...`).
-
-### Bước 2: Khai báo thư viện trong `pom.xml`
-```xml
-<dependency>
-    <groupId>com.stripe</groupId>
-    <artifactId>stripe-java</artifactId>
-    <version>33.1.1</version>
-</dependency>
-```
-
-### Bước 3: Tạo cấu hình `StripeClient` Bean
-Khai báo cấu hình để Spring quản lý đối tượng kết nối của Stripe:
-```java
-@Configuration
-public class StripeClientConfiguration {
-
-    @Value("${stripe.api-key}")
-    private String apiKey;
-
-    @Bean
-    public StripeClient stripeClient() {
-        return StripeClient.builder()
-                .setApiKey(apiKey)
-                .build();
-    }
-}
-```
-
-> [!TIP]
-> **`StripeClient` dùng để làm gì?**
-> 
-> Đây là đối tượng giúp chúng ta kết nối và gọi trực tiếp các API của Stripe từ Java.
-
-### Bước 4: Viết code nghiệp vụ thanh toán
-
-#### Lớp kết nối API Stripe: `StripePaymentService.java`
-File này chỉ chuyên gọi API sang Stripe để tạo phiên thanh toán và trả về kết quả:
-
-```java
-@Service
-@RequiredArgsConstructor
-@Slf4j(topic = "STRIPE-SERVICE")
-public class StripePaymentService {
-
-    @Value("${stripe.success-url}")
-    private String successUrl;
-
-    @Value("${stripe.cancel-url}")
-    private String cancelUrl;
-
-    private final StripeClient stripeClient;
-    private final OrderRepository orderRepository;
-
-    @Transactional
-    public Session createCheckoutSession(CreateLinkPaymentRequest request) {
-        // 1. Tìm đơn hàng cần thanh toán
-        Order order = orderRepository.findOrderWithOrderDetailsByOrderCode(request.orderCode())
-                .orElseThrow(() -> new RuntimeException("Order not found with code: " + request.orderCode()));
-
-        // 2. Cài đặt các thông tin gửi lên Stripe Checkout
-        SessionCreateParams.Builder sessionBuilder = SessionCreateParams.builder()
-                .setSuccessUrl(successUrl + "?session_id={CHECKOUT_SESSION_ID}") // Tự động điền mã session khi thành công
-                .setCancelUrl(cancelUrl)
-                .setClientReferenceId(order.getOrderCode()) // Lưu mã đơn hàng để đối soát tự động qua Webhook
-                .putMetadata("orderCode", order.getOrderCode())
-                .setMode(SessionCreateParams.Mode.PAYMENT);
-
-        // 3. Duyệt qua danh sách sản phẩm trong đơn để hiển thị hóa đơn chi tiết trên Stripe
-        for (OrderDetail detail : order.getOrderDetails()) {
-            Product product = detail.getProduct();
-            // Đổi số tiền sang định dạng Stripe yêu cầu (VND giữ nguyên, USD nhân với 100 thành cents)
-            Long itemAmount = toStripeAmount(detail.getPrice(), order.getCurrency());
-
-            sessionBuilder.addLineItem(SessionCreateParams.LineItem.builder()
-                    .setQuantity(detail.getQuantity().longValue())
-                    .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
-                            .setCurrency(order.getCurrency().toStripeCode())
-                            .setUnitAmount(itemAmount)
-                            .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName(product.getName())
-                                    .build())
-                            .build())
-                    .build());
-        }
-
-        SessionCreateParams params = sessionBuilder.build();
-
-        // 4. Dùng Idempotency Key để đảm bảo không bị trừ tiền trùng lặp nếu lỗi mạng gửi lại request
-        RequestOptions options = RequestOptions.builder()
-                .setIdempotencyKey("checkout-" + order.getOrderCode())
-                .build();
-
-        try {
-            return stripeClient.v1().checkout().sessions().create(params, options);
-        } catch (StripeException e) {
-            log.error("Tạo phiên thanh toán trên Stripe thất bại", e);
-            throw new RuntimeException("Tích hợp Stripe gặp lỗi", e);
-        }
-    }
-
-    private Long toStripeAmount(BigDecimal amount, Currency currency) {
-        return currency.isZeroDecimal() ?
-                amount.longValueExact() :
-                amount.multiply(BigDecimal.valueOf(100)).longValueExact();
-    }
-}
-```
-
-#### Lớp lưu cơ sở dữ liệu: `PaymentService.java`
-File này đóng vai trò trung gian: Lấy thông tin đơn hàng ➜ Nhờ `StripePaymentService` lấy link thanh toán từ Stripe ➜ Lưu lịch sử giao dịch ở trạng thái `PENDING` vào Database của mình ➜ Trả kết quả về cho Controller:
-
-```java
-@Service
-@RequiredArgsConstructor
-@Slf4j(topic = "PAYMENT-SERVICE")
-public class PaymentService {
-
-    private final PaymentRepository paymentRepository;
-    private final OrderRepository orderRepository;
-    private final StripePaymentService stripePaymentService;
-
-    @Transactional(rollbackFor = Exception.class)
-    public CheckoutResponse checkout(CheckoutRequest request) {
-        Order order = orderRepository.findByOrderCode(request.orderCode())
-                .orElseThrow(() -> new RuntimeException("Order not found with code: " + request.orderCode()));
-
-        // 2. Gọi Stripe lấy thông tin phiên thanh toán
-        CreateLinkPaymentRequest stripeRequest = new CreateLinkPaymentRequest(order.getOrderCode());
-        Session session = stripePaymentService.createCheckoutSession(stripeRequest);
-
-        // 3. Lưu thông tin giao dịch vào Database ở trạng thái PENDING
-        Payment payment = Payment.builder()
-                .order(order)
-                .paymentGateway(request.paymentGateway())
-                .amount(order.getTotalPrice())
-                .currency(order.getCurrency())
-                .gatewayTransactionId(session.getId()) // Lưu ID session của Stripe để đối soát Webhook
-                .paymentStatus(PaymentStatus.PENDING)
-                .build();
-        paymentRepository.save(payment);
-
-        log.info("Payment transaction saved successfully. ID: {}, Stripe Session ID: {}", payment.getId(), session.getId());
-
-        return CheckoutResponse.builder()
-                .paymentUrl(session.getUrl())
-                .gatewayTransactionId(session.getId())
-                .build();
-    }
-}
-```
-
-### Bước 5: Cập nhật đơn hàng tự động qua Webhook
-1. Khách hàng thanh toán thành công ➜ Stripe gửi thông báo không đồng bộ sự kiện `checkout.session.completed` về endpoint Webhook của bạn.
-2. Backend nhận Webhook ➜ Đọc ra `Session ID` (hoặc `clientReferenceId`) ➜ Tìm bản ghi `Payment` tương ứng trong DB ➜ Cập nhật `Payment` và `Order` sang trạng thái `SUCCESS/PAID`.
-
 ## 🖥️ Giao diện người dùng (Thymeleaf Frontend)
 
-Dự án tích hợp sẵn giao diện mua hàng và thanh toán trực quan sử dụng **Thymeleaf** với luồng chuyển hướng hoàn chỉnh:
-* **Trang chủ cửa hàng (`/`):** Hiển thị danh sách sản phẩm nổi bật với ảnh, tên, giá bán. Có nút **Xem chi tiết** sản phẩm và nút **Thêm vào giỏ**. Trên Header có biểu tượng giỏ hàng hiển thị số lượng (click vào sẽ chuyển tới trang Checkout).
-* **Trang chi tiết sản phẩm (`/products/{id}`):** Hiển thị mô tả, hình ảnh của một sản phẩm cụ thể. Người dùng có thể nhấn **Mua ngay** để chuyển thẳng tới trang Checkout hoặc **Thêm vào giỏ** để tiếp tục chọn thêm sản phẩm khác.
-* **Trang thanh toán đơn hàng (`/checkout`):** Hiển thị danh sách sản phẩm đang có trong giỏ hàng, cho phép tăng/giảm số lượng, xóa sản phẩm, chọn loại tiền tệ thanh toán (VND/USD). Nhấn nút **Tiến hành thanh toán** để mở cổng Stripe.
-* **Trang thành công (`/api/payments/success`):** Hiển thị khi thanh toán thành công kèm theo Stripe Session ID.
-* **Trang hủy thanh toán (`/api/payments/cancel`):** Hiển thị khi khách hàng chủ động hủy thanh toán.
-
-Bạn chỉ cần truy cập **`http://localhost:8080/`** trên trình duyệt để trải nghiệm luồng mua sắm trực quan này!
+Dự án tích hợp sẵn giao diện mua hàng và thanh toán trực quan sử dụng **Thymeleaf**:
+* **Trang chủ cửa hàng (`/`):** Hiển thị danh sách sản phẩm với ảnh, giá, nút Thêm vào giỏ và xem chi tiết.
+* **Trang chi tiết sản phẩm (`/products/{id}`):** Xem chi tiết sản phẩm và bấm Mua ngay.
+* **Trang thanh toán (`/checkout`):** Xem giỏ hàng, chọn loại tiền tệ và lựa chọn cổng thanh toán (**VNPAY**, **Stripe**, cùng trạng thái sẵn sàng cho **PayPal**, **VietQR**).
+* **Trang kết quả:** Trang thành công (`/api/payments/success`, `/api/payments/vnpay-callback`) và Trang hủy (`/api/payments/cancel`).
 
 ---
 
 ## 🧪 Hướng dẫn Kiểm thử (Testing)
 
-Mở tệp tin **[api-requests.http](./api-requests.http)** và chạy lần lượt các bước:
+Mở tệp tin **[api-requests.http](./api-requests.http)** và chạy lần lượt các bước kiểm thử:
 
-1. **Tạo 5 sản phẩm mẫu:** Nhấp chạy lần lượt các request tạo từ Sản phẩm 1 đến Sản phẩm 5 để lưu vào DB.
-2. **Tạo đơn hàng:** Nhấn chạy **Create Order** để tạo đơn hàng. Copy mã đơn hàng `"orderCode"` trả về.
-3. **Thanh toán:**
-   * Sử dụng request checkout trong tệp **[api-requests.http](./api-requests.http)**.
-   * Thay thế `"orderCode"` bằng mã đơn hàng bạn vừa copy ở bước 2.
-   * Gửi request `POST /api/payments/checkout`. Bạn sẽ nhận về link thanh toán `paymentUrl`.
-4. **Thanh toán thử nghiệm trên Stripe:**
-   * Mở link `paymentUrl` trên trình duyệt.
-   * Sử dụng thông tin thẻ test của Stripe để điền:
-     * **Số thẻ (Card number):** `4242 4242 4242 4242`
-     * **Hạn dùng (MM/YY):** Bất kỳ tháng/năm nào trong tương lai (Ví dụ: `12 / 29`)
-     * **CVC:** `123`
-     * **Tên chủ thẻ:** Tên bất kỳ (Ví dụ: `JAVABUILDER`)
-   * Nhấn **Pay** để hoàn thành thanh toán.
+### Bước 1: Tạo đơn hàng (Order Creation)
+Gửi request `POST http://localhost:8080/api/orders`:
+```json
+{
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ],
+  "currency": "VND"
+}
+```
+* Sao chép mã `"orderCode"` trả về trong JSON (Ví dụ: `ORD-A1B2C3D4`).
+
+---
+
+### Bước 2: Khởi tạo thanh toán (Payment Initiation)
+
+#### Lựa chọn A: Khởi tạo thanh toán qua VNPAY
+Gửi request `POST http://localhost:8080/api/payments/initiate`:
+```json
+{
+  "orderCode": "ORD-A1B2C3D4",
+  "paymentGateway": "VNPAY"
+}
+```
+* Phản hồi trả về:
+```json
+{
+  "status": "success",
+  "message": "Payment initiated successfully",
+  "data": {
+    "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=8900000000&vnp_Command=pay...",
+    "gatewayTransactionId": "ORD-A1B2C3D4"
+  }
+}
+```
+
+#### Lựa chọn B: Khởi tạo thanh toán qua STRIPE
+Gửi request `POST http://localhost:8080/api/payments/initiate`:
+```json
+{
+  "orderCode": "ORD-A1B2C3D4",
+  "paymentGateway": "STRIPE"
+}
+```
+* Phản hồi trả về:
+```json
+{
+  "status": "success",
+  "message": "Payment initiated successfully",
+  "data": {
+    "paymentUrl": "https://checkout.stripe.com/c/pay/cs_test_...",
+    "gatewayTransactionId": "cs_test_..."
+  }
+}
+```
+
+---
+
+### Bước 3: Kiểm thử thực tế trên cổng thanh toán
+
+#### 🇻🇳 3.1. Thanh toán thử nghiệm trên VNPAY Sandbox
+1. Mở `paymentUrl` của VNPAY trên trình duyệt web.
+2. Tại giao diện Cổng thanh toán VNPAY:
+   * **Cách 1: Thẻ ATM & Tài khoản ngân hàng nội địa:**
+     * Chọn ngân hàng: **NCB** (Ngân hàng Quốc Dân).
+     * Số thẻ: `9704198526191432198`
+     * Tên chủ thẻ: `NGUYEN VAN A`
+     * Ngày phát hành: `07/15`
+     * Nhấn **Tiếp tục** ➜ Nhập mã OTP: `123456`
+   * **Cách 2: Thẻ thanh toán quốc tế:**
+     * Chọn loại thẻ: **VISA**
+     * Số thẻ: `4456530000001005`
+     * Tên chủ thẻ: `NGUYEN VAN A`
+     * Ngày hết hạn: `12/26`
+     * Mã CVC/CVV: `123`
+3. Nhấn **Xác nhận thanh toán** ➜ VNPAY xử lý thành công và tự động chuyển hướng về `/api/payments/vnpay-callback` hiển thị giao diện Thành công.
+
+#### 💳 3.2. Thanh toán thử nghiệm trên Stripe Checkout
+1. Mở `paymentUrl` của Stripe trên trình duyệt web.
+2. Nhập thông tin thẻ test của Stripe:
+   * **Số thẻ (Card number):** `4242 4242 4242 4242`
+   * **Hạn dùng (MM/YY):** Bất kỳ tháng/năm nào trong tương lai (Ví dụ: `12 / 29`)
+   * **CVC:** `123`
+   * **Tên chủ thẻ:** Tên bất kỳ (Ví dụ: `JAVABUILDER`)
+3. Nhấn **Pay** ➜ Stripe xử lý và chuyển hướng về `/api/payments/success`.
+
+---
+
+## 📚 Tài liệu Tham khảo & Tài nguyên Cổng thanh toán (Chuyên biệt cho Java / Spring Boot)
+
+Dưới đây là tổng hợp đầy đủ các tài liệu hướng dẫn kỹ thuật chính thức, đường dẫn tải code mẫu Java và thông tin môi trường Sandbox phục vụ quá trình tích hợp.
+
+### 🇻🇳 1. Cổng thanh toán VNPAY (VNPAY Payment Gateway)
+
+* **Trang chủ tài liệu kỹ thuật VNPAY:** [https://sandbox.vnpayment.vn/apis/](https://sandbox.vnpayment.vn/apis/)
+* **Hướng dẫn tích hợp thanh toán (Redirect PAY - Bản chuẩn 2.1.0):** [VNPAY Thanh toán PAY Docs](https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html)
+* **API Truy vấn giao dịch (`querydr`) và Hoàn tiền (`refund`):** [API Truy vấn & Hoàn tiền VNPAY](https://sandbox.vnpayment.vn/apis/docs/truy-van-hoan-tien/querydr&refund.html)
+* **Quy chuẩn mã hóa & Chuyển đổi thuật toán (HMAC-SHA512):** [Chuyển đổi thuật toán mã hóa](https://sandbox.vnpayment.vn/apis/docs/chuyen-doi-thuat-toan/changeTypeHash.html)
+* **Danh sách mã Ngân hàng hỗ trợ (Bank Codes):** [Danh sách Ngân hàng VNPAY](https://sandbox.vnpayment.vn/apis/danh-sach-ngan-hang/)
+
+#### 📥 Tải về Mã nguồn Mẫu Java (Java Sample Code)
+* **Code Demo Java chính thức từ VNPAY (JSP / Servlet / Java Config):**
+  * Link tải trực tiếp: [Tải về vnpay_jsp.zip](https://sandbox.vnpayment.vn/apis/files/vnpay_jsp.zip) *(kho lưu trữ chính thức [VNPAY Downloads](https://sandbox.vnpayment.vn/apis/downloads/))*
+  * Cung cấp sẵn mã nguồn mẫu xử lý: Tạo URL thanh toán (`vnp_Command=pay`), Hàm băm `hmacSHA512`, Nhận và xác thực chữ ký số tại `vnp_ReturnUrl` và `vnp_IpnUrl`.
+
+#### 📄 Tài liệu đặc tả kỹ thuật API (Tech Specs PDF)
+* [Đặc tả kỹ thuật THANH TOÁN PAY 2.1.0 (PDF)](https://sandbox.vnpayment.vn/apis/files/VNPAY%20Payment%20Gateway_Techspec%20Post%20method%202.1.0-VN.pdf)
+* [Đặc tả kỹ thuật THANH TOÁN TOKEN 2.1.0 (PDF)](https://sandbox.vnpayment.vn/apis/files/VNPAY%20Payment%20Token_Techspec%202.1.0-VN.pdf)
+* [Đặc tả kỹ thuật THANH TOÁN TRẢ GÓP 2.1.1 (PDF)](https://sandbox.vnpayment.vn/apis/files/VNPAY_Installment_Payment_Techspec_2.1.1_VN.pdf)
+* [Đặc tả kỹ thuật THANH TOÁN ĐỊNH KỲ 2.1.0 (PDF)](https://sandbox.vnpayment.vn/apis/files/VNPAYGW_RecurringPayment_Techspec2.1.0-VN.pdf)
+
+#### 🧪 Môi trường Sandbox & Thông tin Thẻ Test VNPAY
+* **Đăng ký tài khoản Test Sandbox (nhận `vnp_TmnCode` & `vnp_HashSecret`):** [http://sandbox.vnpayment.vn/devreg/](http://sandbox.vnpayment.vn/devreg/)
+* **Kịch bản kiểm thử SIT Testing (Test Cases):** [https://sandbox.vnpayment.vn/vnpaygw-sit-testing](https://sandbox.vnpayment.vn/vnpaygw-sit-testing)
+* **Trang web Demo thanh toán trực tiếp:** [VNPAY Try-it-now Demo](http://sandbox.vnpayment.vn/tryitnow/Home/CreateOrder)
+* **Thẻ ATM Nội địa Test (Ngân hàng NCB):**
+  * **Ngân hàng:** `NCB`
+  * **Số thẻ:** `9704198526191432198`
+  * **Tên chủ thẻ:** `NGUYEN VAN A`
+  * **Ngày phát hành:** `07/15`
+  * **Mã OTP:** `123456`
+* **Thẻ Quốc tế Test (Visa No-3DS):**
+  * **Số thẻ:** `4456530000001005`
+  * **CVC/CVV:** `123`
+  * **Hạn sử dụng:** `12/26`
+  * **Tên chủ thẻ:** `NGUYEN VAN A`
+
+---
+
+### 💳 2. Cổng thanh toán Quốc tế Stripe (Stripe for Java)
+
+* **Trang chủ tài liệu Stripe Docs:** [https://stripe.com/docs](https://stripe.com/docs)
+* **Thư viện chính thức Stripe Java SDK (GitHub):** [stripe/stripe-java](https://github.com/stripe/stripe-java)
+* **Tài liệu Stripe Checkout (Prebuilt Checkout Page):** [Stripe Checkout Overview](https://stripe.com/docs/payments/checkout)
+* **Tài liệu API Reference (Ngôn ngữ Java):** [Stripe API Reference - Java](https://stripe.com/docs/api?lang=java)
+* **Xử lý tính bất biến & chống trùng lặp (Idempotency Requests):** [Stripe Idempotent Requests](https://stripe.com/docs/api/idempotent_requests)
+* **Quy chuẩn đơn vị tiền tệ & Zero-decimal currencies:** [Stripe Currencies Guide](https://stripe.com/docs/currencies#zero-decimal)
+* **Xử lý sự kiện Webhook trong Java (Spring Boot Handler):** [Stripe Webhooks Guide](https://stripe.com/docs/webhooks)
+* **Stripe CLI (Kiểm thử & forward webhook localhost):** [Stripe CLI Documentation](https://stripe.com/docs/stripe-cli)
+* **Danh sách thẻ test và mã lỗi mô phỏng (Testing & Test Cards):** [Stripe Testing Guide](https://stripe.com/docs/testing)
+  * **Thẻ thanh toán thành công mặc định:** `4242 4242 4242 4242` (Mọi ngày hết hạn tương lai, CVC bất kỳ).
+  * **Thẻ từ chối (Card Declined):** `4000 0000 0000 0002`
+  * **Thẻ yêu cầu xác thực 3D Secure (3DS Authentication):** `4000 0000 0000 3063`
+

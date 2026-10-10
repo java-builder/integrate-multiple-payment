@@ -3,34 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thành công - JavaBuilder Store</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Thanh toán thành công - JavaBuilder Store</title>
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <link rel="stylesheet" th:href="@{/css/all.min.css}">
     <link rel="stylesheet" th:href="@{/css/success.css}">
 </head>
 <body>
 
-    <div class="success-card">
-        <div class="success-icon-container">
+    <div class="mui-paper-card">
+        <!-- Status Icon -->
+        <div class="success-icon-box">
             <i class="fa-solid fa-check"></i>
         </div>
         
-        <h2 class="title">Thành công!</h2>
-        
-        <p class="message">
-            Cảm ơn bạn đã mua sắm tại JavaBuilder Store. Đơn hàng của bạn đã được thanh toán thử nghiệm thành công thông qua Stripe.
-        </p>
-
-        <div class="session-info" th:if="${sessionId != null}">
-            <span>Stripe Session Reference ID:</span>
-            <strong th:text="${sessionId}">cs_test_abc123</strong>
+        <!-- Header -->
+        <div class="header-group">
+            <span class="status-chip"><i class="fa-solid fa-circle-check"></i> GIAO DỊCH THÀNH CÔNG</span>
+            <h1 class="card-title">Cảm ơn bạn đã mua hàng!</h1>
+            <p class="card-desc">
+                Hệ thống đã ghi nhận đơn thanh toán thử nghiệm thành công. Thông tin chi tiết giao dịch đã được đồng bộ hóa.
+            </p>
         </div>
 
-        <a href="/" class="home-btn">
-            <i class="fa-solid fa-arrow-left"></i> Quay lại cửa hàng
+        <!-- Session / Reference ID Box -->
+        <div class="reference-box" th:if="${sessionId != null}">
+            <div class="ref-header">
+                <span class="ref-label"><i class="fa-solid fa-receipt"></i> MÃ GIAO DỊCH / REFERENCE ID</span>
+                <button type="button" class="copy-btn" onclick="copyRefId()" title="Sao chép mã">
+                    <i class="fa-regular fa-copy"></i>
+                </button>
+            </div>
+            <code class="ref-value" id="ref-id-text" th:text="${sessionId}">cs_test_abc123</code>
+        </div>
+
+        <div class="info-chips-grid">
+            <div class="info-chip">
+                <i class="fa-solid fa-shield-check"></i>
+                <span>Giao dịch bảo mật</span>
+            </div>
+            <div class="info-chip">
+                <i class="fa-solid fa-envelope"></i>
+                <span>Hóa đơn điện tử</span>
+            </div>
+        </div>
+
+        <!-- Return Home Button -->
+        <a href="/" class="mui-btn mui-btn-contained">
+            <i class="fa-solid fa-arrow-left"></i> TIẾP TỤC MUA SẮM
         </a>
     </div>
+
+    <script>
+        // Clear local storage cart upon successful payment
+        window.addEventListener('DOMContentLoaded', () => {
+            localStorage.removeItem('cart');
+        });
+
+        function copyRefId() {
+            const el = document.getElementById('ref-id-text');
+            if (el) {
+                navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+                    const btn = document.querySelector('.copy-btn');
+                    btn.innerHTML = '<i class="fa-solid fa-check" style="color: #2e7d32;"></i>';
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                    }, 2000);
+                });
+            }
+        }
+    </script>
 
 </body>
 </html>

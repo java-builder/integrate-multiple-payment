@@ -119,9 +119,7 @@ public class StripeClientConfiguration {
 ```java
 package com.javabuilder.stripe.controller;
 
-import com.javabuilder.stripe.dto.request.CheckoutRequest;
 import com.javabuilder.stripe.dto.response.ApiResponse;
-import com.javabuilder.stripe.dto.response.CheckoutResponse;
 import com.javabuilder.stripe.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

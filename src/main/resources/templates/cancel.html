@@ -3,28 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đã hủy thanh toán - JavaBuilder Store</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Thanh toán đã hủy - JavaBuilder Store</title>
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <link rel="stylesheet" th:href="@{/css/all.min.css}">
     <link rel="stylesheet" th:href="@{/css/cancel.css}">
 </head>
 <body>
 
-    <div class="cancel-card">
-        <div class="cancel-icon-container">
+    <div class="mui-paper-card">
+        <!-- Status Icon -->
+        <div class="cancel-icon-box">
             <i class="fa-solid fa-xmark"></i>
         </div>
         
-        <h2 class="title">Đã hủy thanh toán</h2>
-        
-        <p class="message">
-            Yêu cầu thanh toán của bạn đã bị hủy. Các mặt hàng của bạn vẫn được lưu giữ trong giỏ hàng để bạn có thể tiến hành thanh toán bất cứ khi nào sẵn sàng.
-        </p>
+        <!-- Header -->
+        <div class="header-group">
+            <span class="status-chip"><i class="fa-solid fa-circle-exclamation"></i> GIAO DỊCH CHƯA HOÀN TẤT</span>
+            <h1 class="card-title">Bạn đã hủy giao dịch</h1>
+            <p class="card-desc">
+                Quá trình thanh toán đã được hủy theo yêu cầu. Đừng lo lắng, giỏ hàng của bạn vẫn được lưu giữ đầy đủ để thanh toán lại bất kỳ lúc nào.
+            </p>
+        </div>
 
-        <a href="/" class="home-btn">
-            <i class="fa-solid fa-arrow-left"></i> Quay lại cửa hàng
-        </a>
+        <!-- Alert Notification Box -->
+        <div class="alert-box">
+            <i class="fa-solid fa-circle-info alert-icon"></i>
+            <div class="alert-text">
+                Không có khoản phí nào được trừ khỏi tài khoản của bạn. Bạn có thể lựa chọn cổng thanh toán khác (Stripe, VNPay, VietQR).
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-group">
+            <a href="/checkout" class="mui-btn mui-btn-contained">
+                <i class="fa-solid fa-rotate-right"></i> THỬ LẠI VỚI GIỎ HÀNG
+            </a>
+            <a href="/" class="mui-btn mui-btn-outlined">
+                <i class="fa-solid fa-arrow-left"></i> VỀ TRANG CHỦ
+            </a>
+        </div>
     </div>
 
 </body>

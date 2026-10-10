@@ -1,9 +1,11 @@
+server:
+  port: 8080
 spring:
   application:
     name: stripe
 
   datasource:
-    url: jdbc:mysql://localhost:3306/javabuilder_stripe
+    url: jdbc:mysql://localhost:3306/javabuilder_payments
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 123456
@@ -21,3 +23,9 @@ stripe:
   api-key: ${STRIPE_API_KEY:sk_test_mock_key}
   success-url: ${STRIPE_SUCCESS_URL:http://localhost:8080/api/payments/success}
   cancel-url: ${STRIPE_CANCEL_URL:http://localhost:8080/api/payments/cancel}
+
+vnpay:
+  tmn-code: ${VNPAY_TMN_CODE:}
+  secret-key: ${VNPAY_SECRET_KEY:}
+  vnp-url: ${VNPAY_VNP_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+  return-url: ${VNPAY_RETURN_URL:http://localhost:8080/api/payments/vnpay-callback}

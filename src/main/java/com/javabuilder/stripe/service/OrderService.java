@@ -27,7 +27,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final OrderMapper orderMapper;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public OrderResponse createOrder(CreateOrderRequest request) {
         // 1. Generate order code
         String orderCode = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();

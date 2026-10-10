@@ -3,7 +3,8 @@ package com.javabuilder.stripe.dto.response;
 import lombok.Builder;
 
 @Builder
-public record CheckoutResponse(
+public record PaymentInitResponse(
         String paymentUrl,
         String gatewayTransactionId
-) {}
+) {
+}

@@ -1,5 +1,6 @@
 package com.javabuilder.stripe.dto.response;
 
+import com.javabuilder.stripe.common.Currency;
 import com.javabuilder.stripe.common.OrderStatus;
 import lombok.Builder;
 import java.math.BigDecimal;
@@ -12,7 +13,7 @@ public record OrderResponse(
         String orderCode,
         OrderStatus orderStatus,
         BigDecimal totalPrice,
-        com.javabuilder.stripe.common.Currency currency,
+        Currency currency,
         List<OrderItemResponse> orderItems,
         Instant createdAt
 ) {}
