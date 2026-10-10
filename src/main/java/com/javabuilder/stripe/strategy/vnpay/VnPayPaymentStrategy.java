@@ -1,5 +1,6 @@
 package com.javabuilder.stripe.strategy.vnpay;
 
+import com.javabuilder.stripe.common.Currency;
 import com.javabuilder.stripe.common.PaymentGateway;
 import com.javabuilder.stripe.dto.response.PaymentGatewayResponse;
 import com.javabuilder.stripe.strategy.PaymentStrategy;
@@ -27,7 +28,11 @@ public class VnPayPaymentStrategy implements PaymentStrategy {
 
     @Override
     public PaymentGatewayResponse processPayment(PaymentGatewayCommand command) {
-        long amount = command.totalPrice().multiply(BigDecimal.valueOf(100)).longValue();
+        BigDecimal totalPrice = command.totalPrice();
+        if (command.currency() == Currency.USD) {
+            totalPrice = totalPrice.multiply(BigDecimal.valueOf(25000));
+        }
+        long amount = totalPrice.multiply(BigDecimal.valueOf(100)).longValue();
         String vnpIpAddr = command.clientIp();
         String vnpTxnRef = VnPayUtils.getRandomNumber(8);
 
@@ -75,9 +80,8 @@ public class VnPayPaymentStrategy implements PaymentStrategy {
                 }
             }
         }
-        String queryUrl = query.toString();
-        String vnpSecureHash  = VnPayUtils.hmacSHA512(vnPayProperties.getSecretKey(), hashData.toString());
-        queryUrl += "&vnp_SecureHash=" + vnpSecureHash;
+        String vnpSecureHash = VnPayUtils.hmacSHA512(vnPayProperties.getSecretKey(), hashData.toString());
+        String queryUrl = query.append("&vnp_SecureHash=").append(vnpSecureHash).toString();
         String paymentUrl = vnPayProperties.getVnpUrl() + "?" + queryUrl;
 
         return PaymentGatewayResponse.builder()

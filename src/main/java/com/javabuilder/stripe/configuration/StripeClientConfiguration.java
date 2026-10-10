@@ -12,7 +12,7 @@ public class StripeClientConfiguration {
     private String apiKey;
 
     @Bean
-    public StripeClient stripeClient() {
+    StripeClient stripeClient() {
         return StripeClient.builder()
                 .setApiKey(apiKey)
                 .build();

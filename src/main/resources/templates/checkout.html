@@ -110,8 +110,8 @@
                             </div>
                         </div>
 
-                        <!-- PayPal (Coming Soon) -->
-                        <div class="gateway-item-mui disabled" id="gateway-card-PAYPAL" onclick="handleDisabledGateway('Ví PayPal')">
+                        <!-- PayPal (Active) -->
+                        <div class="gateway-item-mui" id="gateway-card-PAYPAL" onclick="selectGateway('PAYPAL')">
                             <div class="mui-radio"></div>
                             <div class="gateway-logo-container">
                                 <img th:src="@{/images/paypal.webp}" src="/images/paypal.webp" alt="PayPal" loading="lazy">
@@ -119,9 +119,9 @@
                             <div class="gateway-details-col">
                                 <div class="gateway-row-title">
                                     <span class="gateway-text-title">PayPal Wallet</span>
-                                    <span class="mui-chip-tag chip-soon">Sắp ra mắt</span>
+                                    <span class="mui-chip-tag chip-intl">Quốc tế</span>
                                 </div>
-                                <div class="gateway-desc-text">Thanh toán bảo vệ người mua thông qua tài khoản PayPal quốc tế</div>
+                                <div class="gateway-desc-text">Thanh toán bảo vệ người mua qua tài khoản Ví PayPal quốc tế</div>
                             </div>
                         </div>
 
@@ -148,17 +148,46 @@
             <div class="mui-summary-card">
                 <div class="mui-summary-header">TÓM TẮT ĐƠN HÀNG</div>
 
-                <!-- Currency Outlined Box -->
+                <!-- Custom MUI Currency Selector (Chuyên nghiệp) -->
                 <div class="mui-form-control">
-                    <div class="mui-outlined-select-box">
-                        <label for="currency-select">Tiền tệ thanh toán:</label>
-                        <select id="currency-select" onchange="onCurrencyChange()">
-                            <option value="VND">VND (₫)</option>
-                            <option value="USD">USD ($)</option>
-                        </select>
+                    <label style="font-size: 11px; font-weight: 700; color: var(--mui-text-secondary); letter-spacing: 0.5px; text-transform: uppercase;">Tiền tệ thanh toán:</label>
+                    <div class="mui-custom-select-wrapper" id="checkout-currency-wrapper">
+                        <div class="mui-custom-select-trigger" id="checkout-currency-trigger" onclick="toggleCheckoutCurrencyDropdown()">
+                            <div class="select-selected-val" id="checkout-currency-display">
+                                <span class="curr-flag-badge curr-badge-usd">$</span>
+                                <div>
+                                    <span class="opt-title">USD ($)</span>
+                                    <span class="opt-sub" style="margin-left: 4px;">- Đô la Mỹ</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-down select-caret" id="checkout-currency-caret"></i>
+                        </div>
+                        <div class="mui-custom-select-menu" id="checkout-currency-menu">
+                            <div class="mui-custom-select-option selected" id="opt-usd" onclick="selectCheckoutCurrency('USD')">
+                                <div class="opt-content">
+                                    <span class="curr-flag-badge curr-badge-usd">$</span>
+                                    <div>
+                                        <div class="opt-title">USD ($)</div>
+                                        <div class="opt-sub">Đô la Mỹ</div>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-check opt-check"></i>
+                            </div>
+                            <div class="mui-custom-select-option" id="opt-vnd" onclick="selectCheckoutCurrency('VND')">
+                                <div class="opt-content">
+                                    <span class="curr-flag-badge curr-badge-vnd">₫</span>
+                                    <div>
+                                        <div class="opt-title">VND (₫)</div>
+                                        <div class="opt-sub">Việt Nam Đồng (1$ ~ 25.000₫)</div>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-check opt-check"></i>
+                            </div>
+                        </div>
+                        <input type="hidden" id="currency-select" value="USD">
                     </div>
                     <div class="mui-helper-text" id="currency-hint" style="display: none;">
-                        <i class="fa-solid fa-circle-exclamation"></i> VNPAY hỗ trợ thanh toán bằng VND
+                        <i class="fa-solid fa-circle-info"></i>
                     </div>
                 </div>
 
@@ -246,41 +275,94 @@
 
         function formatCurrency(amount, currency) {
             if (currency === 'VND') {
-                return new Intl.NumberFormat('vi-VN').format(amount) + ' ₫';
+                const vndAmount = amount * 25000;
+                return new Intl.NumberFormat('vi-VN').format(Math.round(vndAmount)) + ' ₫';
             } else {
-                const usdAmount = amount / 25000;
-                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(usdAmount);
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
             }
         }
 
-        function onCurrencyChange() {
-            const currencySelect = document.getElementById('currency-select');
-            if (selectedGateway === 'VNPAY' && currencySelect.value === 'USD') {
-                showToast('Cổng VNPAY chỉ hỗ trợ thanh toán VND. Đã chuyển về VND.');
-                currencySelect.value = 'VND';
+        function toggleCheckoutCurrencyDropdown() {
+            const trigger = document.getElementById('checkout-currency-trigger');
+            if (trigger && trigger.classList.contains('disabled')) return;
+            const wrapper = document.getElementById('checkout-currency-wrapper');
+            if (wrapper) wrapper.classList.toggle('open');
+        }
+
+        function selectCheckoutCurrency(curr) {
+            const wrapper = document.getElementById('checkout-currency-wrapper');
+            if (wrapper) wrapper.classList.remove('open');
+
+            if (selectedGateway === 'PAYPAL' && curr === 'VND') {
+                showToast('PayPal chỉ hỗ trợ thanh toán bằng Đô la Mỹ (USD)');
+                return;
             }
+
+            document.getElementById('currency-select').value = curr;
+            updateCheckoutCurrencyUI(curr);
             updateCartUI();
         }
 
+        function updateCheckoutCurrencyUI(curr) {
+            const displayEl = document.getElementById('checkout-currency-display');
+            const optVnd = document.getElementById('opt-vnd');
+            const optUsd = document.getElementById('opt-usd');
+
+            if (!displayEl || !optVnd || !optUsd) return;
+
+            if (curr === 'VND') {
+                displayEl.innerHTML = `
+                    <span class="curr-flag-badge curr-badge-vnd">₫</span>
+                    <div>
+                        <span class="opt-title">VND (₫)</span>
+                        <span class="opt-sub" style="margin-left: 4px;">- Việt Nam Đồng</span>
+                    </div>
+                `;
+                optVnd.classList.add('selected');
+                optUsd.classList.remove('selected');
+            } else {
+                displayEl.innerHTML = `
+                    <span class="curr-flag-badge curr-badge-usd">$</span>
+                    <div>
+                        <span class="opt-title">USD ($)</span>
+                        <span class="opt-sub" style="margin-left: 4px;">- Đô la Mỹ</span>
+                    </div>
+                `;
+                optUsd.classList.add('selected');
+                optVnd.classList.remove('selected');
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('checkout-currency-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                wrapper.classList.remove('open');
+            }
+        });
+
         function selectGateway(gateway) {
-            if (gateway === 'PAYPAL' || gateway === 'VIETQR') {
+            if (gateway === 'VIETQR') {
                 return;
             }
 
             selectedGateway = gateway;
 
-            // VNPAY uses VND
-            const currencySelect = document.getElementById('currency-select');
             const currencyHint = document.getElementById('currency-hint');
+            const trigger = document.getElementById('checkout-currency-trigger');
 
             if (selectedGateway === 'VNPAY') {
-                if (currencySelect.value !== 'VND') {
-                    currencySelect.value = 'VND';
-                    updateCartUI();
+                if (trigger) trigger.classList.remove('disabled');
+                if (currencyHint) currencyHint.style.display = 'none';
+            } else if (selectedGateway === 'PAYPAL') {
+                selectCheckoutCurrency('USD');
+                if (trigger) trigger.classList.add('disabled');
+                if (currencyHint) {
+                    currencyHint.innerHTML = '<i class="fa-solid fa-circle-info"></i> PayPal chỉ hỗ trợ thanh toán bằng Đô la Mỹ (USD)';
+                    currencyHint.style.display = 'flex';
                 }
-                currencyHint.style.display = 'flex';
             } else {
-                currencyHint.style.display = 'none';
+                if (trigger) trigger.classList.remove('disabled');
+                if (currencyHint) currencyHint.style.display = 'none';
             }
 
             updateGatewayUI();
@@ -289,7 +371,7 @@
         function updateGatewayUI() {
             // Cards active state
             document.querySelectorAll('.gateway-item-mui').forEach(card => {
-                card.classList.remove('active', 'vnpay-selected', 'stripe-selected');
+                card.classList.remove('active', 'vnpay-selected', 'stripe-selected', 'paypal-selected');
             });
 
             const activeCard = document.getElementById(`gateway-card-${selectedGateway}`);
@@ -299,6 +381,8 @@
                     activeCard.classList.add('vnpay-selected');
                 } else if (selectedGateway === 'STRIPE') {
                     activeCard.classList.add('stripe-selected');
+                } else if (selectedGateway === 'PAYPAL') {
+                    activeCard.classList.add('paypal-selected');
                 }
             }
 
@@ -315,6 +399,10 @@
                 gatewayDisplay.textContent = 'Stripe Checkout';
                 checkoutBtn.className = 'mui-pay-btn btn-stripe';
                 checkoutBtnText.textContent = 'Thanh toán qua Stripe';
+            } else if (selectedGateway === 'PAYPAL') {
+                gatewayDisplay.textContent = 'PayPal Wallet';
+                checkoutBtn.className = 'mui-pay-btn btn-paypal';
+                checkoutBtnText.textContent = 'Thanh toán qua PayPal';
             }
         }
 
@@ -411,6 +499,8 @@
 
             if (selectedGateway === 'VNPAY') {
                 loadingText.textContent = 'Đang kết nối cổng thanh toán VNPAY...';
+            } else if (selectedGateway === 'PAYPAL') {
+                loadingText.textContent = 'Đang kết nối cổng thanh toán PayPal...';
             } else {
                 loadingText.textContent = 'Đang kết nối cổng thanh toán Stripe...';
             }
@@ -455,8 +545,10 @@
                 });
 
                 if (!checkoutResponse.ok) {
+                    const errData = await checkoutResponse.json().catch(() => null);
+                    const errMsg = errData?.message || `Không thể kết nối cổng thanh toán ${selectedGateway}!`;
                     overlay.classList.remove('active');
-                    showToast(`Không thể kết nối cổng thanh toán ${selectedGateway}!`);
+                    showToast(errMsg);
                     return;
                 }
 

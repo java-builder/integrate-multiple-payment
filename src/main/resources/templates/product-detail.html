@@ -11,6 +11,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <link rel="stylesheet" th:href="@{/css/all.min.css}">
     <link rel="stylesheet" th:href="@{/css/product-detail.css}">
+    <link rel="stylesheet" th:href="@{/css/quick-checkout.css}">
 </head>
 <body>
 
@@ -67,7 +68,7 @@
                     <div class="price-box">
                         <div class="price-value" 
                              th:data-price="${product.price}" 
-                             th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+                             th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
                         <span class="vat-tag">Đã bao gồm VAT</span>
                     </div>
                     
@@ -111,7 +112,8 @@
                                 th:data-id="${product.id}" 
                                 th:data-name="${product.name}" 
                                 th:data-price="${product.price}"
-                                onclick="buyNow(this)">
+                                th:data-image="${product.imageUrl}"
+                                onclick="openQuickCheckout(this)">
                             <i class="fa-solid fa-bolt"></i> MUA NGAY
                         </button>
                     </div>
@@ -133,6 +135,172 @@
             </div>
         </div>
     </main>
+
+    <!-- Quick Checkout Modal (MUI Style) -->
+    <div class="quick-modal-backdrop" id="quick-checkout-modal" onclick="if(event.target === this) closeQuickModal()">
+        <div class="quick-modal-window">
+            <div class="quick-modal-header">
+                <div>
+                    <div class="quick-modal-title">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Thanh toán nhanh - Mua ngay</span>
+                    </div>
+                    <div class="quick-modal-subtitle">Chọn cổng thanh toán và xác nhận đơn hàng trực tiếp</div>
+                </div>
+                <button type="button" class="quick-modal-close" onclick="closeQuickModal()" title="Đóng">&times;</button>
+            </div>
+
+            <div class="quick-modal-body">
+                <!-- Product Preview Row -->
+                <div class="quick-prod-preview">
+                    <img id="quick-prod-image" src="" alt="Sản phẩm" class="quick-prod-img">
+                    <div class="quick-prod-info">
+                        <div class="quick-prod-name" id="quick-prod-title">Tên sản phẩm</div>
+                        <div class="quick-prod-unitprice" id="quick-prod-unitprice">0 ₫</div>
+                    </div>
+                    <div class="quick-stepper">
+                        <button type="button" class="quick-stepper-btn" onclick="changeQuickQty(-1)">-</button>
+                        <span class="quick-stepper-val" id="quick-stepper-value">1</span>
+                        <button type="button" class="quick-stepper-btn" onclick="changeQuickQty(1)">+</button>
+                    </div>
+                </div>
+
+                <!-- Payment Gateways -->
+                <div>
+                    <div class="quick-field-label">
+                        <i class="fa-regular fa-credit-card"></i> Chọn cổng thanh toán:
+                    </div>
+                    <div class="quick-gateway-list">
+                        <!-- VNPAY (Active) -->
+                        <div class="quick-gateway-item active vnpay-active" id="quick-gw-vnpay" onclick="selectQuickGateway('VNPAY')">
+                            <div class="quick-radio"></div>
+                            <div class="quick-logo-box">
+                                <img th:src="@{/images/vnpay-logo.jpg}" src="/images/vnpay-logo.jpg" alt="VNPAY">
+                            </div>
+                            <div class="quick-gateway-info">
+                                <div class="quick-gateway-title-row">
+                                    <span class="quick-gateway-name">VNPAY Gateway</span>
+                                    <span class="quick-tag tag-rec">Khuyên dùng</span>
+                                </div>
+                                <div class="quick-gateway-desc">Thẻ ATM nội địa, VNPAY-QR & Quốc tế</div>
+                            </div>
+                        </div>
+
+                        <!-- Stripe (Active) -->
+                        <div class="quick-gateway-item" id="quick-gw-stripe" onclick="selectQuickGateway('STRIPE')">
+                            <div class="quick-radio"></div>
+                            <div class="quick-logo-box">
+                                <img th:src="@{/images/stripe.webp}" src="/images/stripe.webp" alt="Stripe">
+                            </div>
+                            <div class="quick-gateway-info">
+                                <div class="quick-gateway-title-row">
+                                    <span class="quick-gateway-name">Stripe Checkout</span>
+                                    <span class="quick-tag tag-intl">Quốc tế</span>
+                                </div>
+                                <div class="quick-gateway-desc">Visa, MasterCard, JCB, AMEX toàn cầu</div>
+                            </div>
+                        </div>
+
+                        <!-- PayPal -->
+                        <div class="quick-gateway-item" id="quick-gw-paypal" onclick="selectQuickGateway('PAYPAL')">
+                            <div class="quick-radio"></div>
+                            <div class="quick-logo-box">
+                                <img th:src="@{/images/paypal.webp}" src="/images/paypal.webp" alt="PayPal">
+                            </div>
+                            <div class="quick-gateway-info">
+                                <div class="quick-gateway-title-row">
+                                    <span class="quick-gateway-name">Ví PayPal</span>
+                                    <span class="quick-tag tag-intl">Quốc tế</span>
+                                </div>
+                                <div class="quick-gateway-desc">Thanh toán tài khoản PayPal quốc tế</div>
+                            </div>
+                        </div>
+
+                        <!-- VietQR (Soon) -->
+                        <div class="quick-gateway-item disabled" onclick="selectQuickGateway('VIETQR')">
+                            <div class="quick-radio"></div>
+                            <div class="quick-logo-box">
+                                <img th:src="@{/images/vietqrpay-logo.webp}" src="/images/vietqrpay-logo.webp" alt="VietQR">
+                            </div>
+                            <div class="quick-gateway-info">
+                                <div class="quick-gateway-title-row">
+                                    <span class="quick-gateway-name">VietQR Napas 247</span>
+                                    <span class="quick-tag tag-soon">Sắp ra mắt</span>
+                                </div>
+                                <div class="quick-gateway-desc">Chuyển khoản ngân hàng quét mã QR 24/7</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Currency (Custom MUI Select) -->
+                <div>
+                    <div class="quick-field-label">
+                        <i class="fa-solid fa-coins"></i> Loại tiền tệ thanh toán:
+                    </div>
+                    <div class="quick-custom-select-wrapper" id="quick-curr-wrapper">
+                        <div class="quick-custom-select-trigger" id="quick-curr-trigger" onclick="toggleQuickCurrencyDropdown()">
+                            <div class="quick-select-val" id="quick-curr-display">
+                                <span class="quick-curr-badge quick-badge-usd">$</span>
+                                <div>
+                                    <span class="quick-opt-title">USD ($)</span>
+                                    <span class="quick-opt-sub" style="margin-left: 4px;">- Đô la Mỹ</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-down quick-select-caret" id="quick-curr-caret"></i>
+                        </div>
+                        <div class="quick-custom-select-menu" id="quick-curr-menu">
+                            <div class="quick-custom-select-option selected" id="quick-opt-usd" onclick="setQuickCurrency('USD')">
+                                <div class="quick-opt-content">
+                                    <span class="quick-curr-badge quick-badge-usd">$</span>
+                                    <div>
+                                        <div class="quick-opt-title">USD ($)</div>
+                                        <div class="quick-opt-sub">Đô la Mỹ</div>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-check quick-opt-check"></i>
+                            </div>
+                            <div class="quick-custom-select-option" id="quick-opt-vnd" onclick="setQuickCurrency('VND')">
+                                <div class="quick-opt-content">
+                                    <span class="quick-curr-badge quick-badge-vnd">₫</span>
+                                    <div>
+                                        <div class="quick-opt-title">VND (₫)</div>
+                                        <div class="quick-opt-sub">Việt Nam Đồng (1$ ~ 25.000₫)</div>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-check quick-opt-check"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="quick-currency-hint" id="quick-currency-hint" style="display: none;">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </div>
+                </div>
+
+                <!-- Total -->
+                <div class="quick-total-row">
+                    <span class="quick-total-label">Tổng thanh toán:</span>
+                    <strong class="quick-total-amount" id="quick-total-display">0 ₫</strong>
+                </div>
+            </div>
+
+            <div class="quick-modal-actions">
+                <button type="button" class="quick-pay-btn btn-vnpay" id="quick-pay-submit-btn" onclick="executeDirectPayment()">
+                    <i class="fa-solid fa-lock"></i>
+                    <span id="quick-pay-btn-text">Thanh toán qua VNPAY</span>
+                </button>
+                <div class="quick-trust-row">
+                    <i class="fa-solid fa-shield-halved"></i> Giao dịch bảo mật chuẩn PCI-DSS Standard
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Checkout Loading Overlay -->
+    <div class="quick-loading-backdrop" id="quick-loading-overlay">
+        <div class="quick-spinner"></div>
+        <div class="quick-loading-text" id="quick-loading-text">Đang kết nối cổng thanh toán...</div>
+    </div>
 
     <!-- MUI Snackbar -->
     <div class="mui-snackbar" id="toast">
@@ -200,5 +368,6 @@
             }, 3000);
         }
     </script>
+    <script th:src="@{/js/quick-checkout.js}"></script>
 </body>
 </html>

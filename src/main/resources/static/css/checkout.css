@@ -33,6 +33,8 @@
     /* Brand Accents */
     --vnpay-blue: #005baa;
     --stripe-purple: #635bff;
+    --paypal-blue: #0070ba;
+    --paypal-dark: #003087;
     
     /* MUI Geometry: Vuông vắn */
     --mui-radius-xs: 2px;
@@ -456,6 +458,12 @@ header.mui-app-bar {
     background: #faf9ff;
 }
 
+.gateway-item-mui.active.paypal-selected {
+    border-color: var(--paypal-blue);
+    box-shadow: 0 0 0 1px var(--paypal-blue);
+    background: #f4f9fd;
+}
+
 /* Disabled State */
 .gateway-item-mui.disabled {
     opacity: 0.55;
@@ -489,6 +497,10 @@ header.mui-app-bar {
     border-color: var(--stripe-purple);
 }
 
+.gateway-item-mui.active.paypal-selected .mui-radio {
+    border-color: var(--paypal-blue);
+}
+
 .gateway-item-mui.active .mui-radio::after {
     content: '';
     width: 10px;
@@ -503,6 +515,10 @@ header.mui-app-bar {
 
 .gateway-item-mui.active.stripe-selected .mui-radio::after {
     background: var(--stripe-purple);
+}
+
+.gateway-item-mui.active.paypal-selected .mui-radio::after {
+    background: var(--paypal-blue);
 }
 
 /* Gateway Brand Logo Container */
@@ -614,38 +630,163 @@ header.mui-app-bar {
 .mui-form-control {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 }
 
-.mui-outlined-select-box {
+/* Custom MUI Select Component (Chuyên nghiệp) */
+.mui-custom-select-wrapper {
+    position: relative;
+    width: 100%;
+    user-select: none;
+}
+
+.mui-custom-select-trigger {
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.23);
+    border: 1px solid #cbd5e1;
     border-radius: var(--mui-radius-sm);
-    padding: 7px 10px;
-    transition: border-color 0.15s ease;
-}
-
-.mui-outlined-select-box:hover {
-    border-color: rgba(0, 0, 0, 0.87);
-}
-
-.mui-outlined-select-box label {
-    font-size: 12px;
-    color: var(--mui-text-secondary);
-    font-weight: 500;
-}
-
-.mui-outlined-select-box select {
-    background: transparent;
-    border: none;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--mui-text-primary);
-    outline: none;
+    padding: 8px 12px;
     cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 40px;
+    box-sizing: border-box;
+}
+
+.mui-custom-select-trigger:hover:not(.disabled) {
+    border-color: #94a3b8;
+    background: #fafbfc;
+}
+
+.mui-custom-select-wrapper.open .mui-custom-select-trigger {
+    border-color: var(--mui-primary);
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.15);
+}
+
+.mui-custom-select-trigger.disabled {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.select-selected-val {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mui-text-primary);
+}
+
+.curr-flag-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    flex-shrink: 0;
+}
+
+.curr-badge-vnd {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.curr-badge-usd {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.select-caret {
+    font-size: 11px;
+    color: #64748b;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mui-custom-select-wrapper.open .select-caret {
+    transform: rotate(180deg);
+    color: var(--mui-primary);
+}
+
+/* Custom Select Dropdown Menu Popover */
+.mui-custom-select-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--mui-radius-sm);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+    z-index: 500;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mui-custom-select-wrapper.open .mui-custom-select-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.mui-custom-select-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--mui-text-primary);
+    transition: background 0.15s ease;
+}
+
+.mui-custom-select-option:hover {
+    background: #f1f5f9;
+}
+
+.mui-custom-select-option.selected {
+    background: #e3f2fd;
+    color: var(--mui-primary);
+    font-weight: 600;
+}
+
+.opt-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.opt-title {
+    font-weight: 600;
+}
+
+.opt-sub {
+    font-size: 11.5px;
+    color: var(--mui-text-secondary);
+}
+
+.mui-custom-select-option.selected .opt-sub {
+    color: #1565c0;
+}
+
+.opt-check {
+    font-size: 12px;
+    color: var(--mui-primary);
+    opacity: 0;
+}
+
+.mui-custom-select-option.selected .opt-check {
+    opacity: 1;
 }
 
 .mui-helper-text {
@@ -730,6 +871,15 @@ header.mui-app-bar {
 
 .mui-pay-btn.btn-stripe:hover:not(:disabled) {
     background: #5348eb;
+    box-shadow: var(--mui-shadow-4);
+}
+
+.mui-pay-btn.btn-paypal {
+    background: var(--paypal-blue);
+}
+
+.mui-pay-btn.btn-paypal:hover:not(:disabled) {
+    background: var(--paypal-dark);
     box-shadow: var(--mui-shadow-4);
 }
 
@@ -827,12 +977,87 @@ header.mui-app-bar {
     to { transform: rotate(360deg); }
 }
 
-/* Responsive */
-@media (max-width: 860px) {
+/* ==========================================================================
+   Responsive Breakpoints - Chuẩn chỉnh Mobile & Tablet
+   ========================================================================== */
+
+@media (max-width: 900px) {
     .checkout-layout {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
     .mui-summary-card {
         position: static;
+    }
+    .container {
+        padding: 0 16px;
+        margin: 20px auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .mui-toolbar {
+        padding: 10px 16px;
+    }
+    .mui-paper,
+    .mui-summary-card {
+        padding: 18px 14px;
+    }
+    .mui-card-header {
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+    }
+    .mui-card-title span {
+        font-size: 15px;
+    }
+    
+    /* Cart Item mobile */
+    .cart-item-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 0;
+    }
+    .item-product-info {
+        width: 100%;
+    }
+    .item-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* Gateway Item mobile */
+    .gateway-item-mui {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+    .gateway-logo-container {
+        width: 76px;
+        height: 30px;
+    }
+    .gateway-text-title {
+        font-size: 13.5px;
+    }
+    .gateway-desc-text {
+        font-size: 11px;
+    }
+
+    .mui-snackbar {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        max-width: none;
+    }
+}
+
+@media (max-width: 380px) {
+    .gateway-item-mui {
+        flex-wrap: wrap;
+    }
+    .gateway-details-col {
+        width: 100%;
+    }
+    .logo-text {
+        font-size: 16px;
     }
 }

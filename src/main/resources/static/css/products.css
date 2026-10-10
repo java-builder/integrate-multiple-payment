@@ -438,15 +438,56 @@ body {
     background: rgba(144, 202, 249, 0.1);
 }
 
-@media (max-width: 600px) {
+/* Responsive Breakpoints - Mobile & Tablet Chuẩn chỉnh */
+@media (max-width: 768px) {
+    .mui-main-container {
+        padding: 0 16px;
+        margin: 24px auto;
+    }
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 16px;
+    }
+}
+
+@media (max-width: 520px) {
+    .mui-toolbar {
+        padding: 10px 16px;
+    }
+    .logo-text {
+        font-size: 16px;
+    }
+    .mui-cart-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
     .section-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 12px;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .section-title {
+        font-size: 19px;
+    }
+    .products-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .mui-card-media {
+        height: 180px;
+    }
+    .mui-card-actions {
+        padding: 10px 14px;
+        gap: 8px;
+    }
+    .mui-btn {
+        padding: 9px 8px;
+        font-size: 11.5px;
     }
     .mui-snackbar {
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
     }
 }

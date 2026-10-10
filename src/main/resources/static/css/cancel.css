@@ -190,3 +190,16 @@ body {
         transform: translateY(0);
     }
 }
+
+@media (max-width: 480px) {
+    body {
+        padding: 14px;
+    }
+    .mui-paper-card {
+        padding: 24px 16px;
+        gap: 16px;
+    }
+    .card-title {
+        font-size: 18px;
+    }
+}

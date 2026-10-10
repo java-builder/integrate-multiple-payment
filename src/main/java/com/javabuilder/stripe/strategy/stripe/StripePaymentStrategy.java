@@ -24,8 +24,8 @@ import java.math.RoundingMode;
 @Slf4j(topic = "STRIPE-PAYMENT-STRATEGY")
 public class StripePaymentStrategy implements PaymentStrategy {
 
-    @Value("${stripe.success-url}")
-    private String successUrl;
+    @Value("${stripe.return-url}")
+    private String returnUrl;
 
     @Value("${stripe.cancel-url}")
     private String cancelUrl;
@@ -40,7 +40,7 @@ public class StripePaymentStrategy implements PaymentStrategy {
     @Override
     public PaymentGatewayResponse processPayment(PaymentGatewayCommand command) {
         SessionCreateParams.Builder sessionBuilder = SessionCreateParams.builder()
-                .setSuccessUrl(successUrl + "?session_id={CHECKOUT_SESSION_ID}")
+                .setSuccessUrl(returnUrl + "?session_id={CHECKOUT_SESSION_ID}")
                 .setCancelUrl(cancelUrl)
                 .setClientReferenceId(command.orderCode())
                 .putMetadata("orderCode", command.orderCode())

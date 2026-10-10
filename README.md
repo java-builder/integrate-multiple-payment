@@ -2,6 +2,11 @@
 
 Dự án mẫu hướng dẫn tích hợp hệ thống thanh toán trực tuyến đa cổng (**Stripe**, **VNPay**,...) vào ứng dụng Spring Boot 4 một cách chuyên nghiệp, áp dụng các **Design Pattern** chuẩn doanh nghiệp (**Strategy Pattern**, **Factory Pattern**), phân tách rõ ràng giữa luồng Đặt hàng (Order) và Khởi tạo thanh toán (Payment Initiation).
 
+### 📖 Tài liệu chuyên biệt từng cổng thanh toán:
+* 💳 **[Hướng dẫn tích hợp Cổng Stripe Checkout (STRIPE.md)](./docs/STRIPE.md)**: Chi tiết từ A-Z cấu hình `StripeClient`, `StripePaymentStrategy`, quy chuẩn Zero-Decimal Currency và Idempotency Key.
+* 🅿️ **[Hướng dẫn tích hợp Cổng PayPal (PAYPAL.md)](./docs/PAYPAL.md)**: Chi tiết PayPal Server SDK v2.4.0 (Orders API v2), cấu hình `PaypalServerSdkClient`, `PaypalPaymentStrategy`, xử lý `itemTotal` và hạn mức giao dịch Sandbox.
+* 🇻🇳 **[Hướng dẫn tích hợp Cổng VNPAY Sandbox (VNPAY.md)](./docs/VNPAY.md)**: Chi tiết chuẩn kỹ thuật VNPAY 2.1.0, hàm băm `HMAC-SHA512`, `VnPayPaymentStrategy`, thẻ test NCB/Visa, và mã lỗi `vnp_ResponseCode`.
+
 ---
 
 ## 📌 Điểm nổi bật của kiến trúc

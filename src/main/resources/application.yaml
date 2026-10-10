@@ -21,7 +21,7 @@ spring:
 
 stripe:
   api-key: ${STRIPE_API_KEY:sk_test_mock_key}
-  success-url: ${STRIPE_SUCCESS_URL:http://localhost:8080/api/payments/success}
+  return-url: ${STRIPE_SUCCESS_URL:http://localhost:8080/api/payments/success}
   cancel-url: ${STRIPE_CANCEL_URL:http://localhost:8080/api/payments/cancel}
 
 vnpay:
@@ -29,3 +29,9 @@ vnpay:
   secret-key: ${VNPAY_SECRET_KEY:}
   vnp-url: ${VNPAY_VNP_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
   return-url: ${VNPAY_RETURN_URL:http://localhost:8080/api/payments/vnpay-callback}
+
+paypal:
+  client-id: ${PAYPAL_CLIENT_ID:}
+  client-secret: ${PAYPAL_CLIENT_SECRET:}
+  return-url: ${PAYPAL_RETURN_URL:http://localhost:8080/api/payments/success}
+  cancel-url: ${PAYPAL_CANCEL_URL:http://localhost:8080/api/payments/cancel}
