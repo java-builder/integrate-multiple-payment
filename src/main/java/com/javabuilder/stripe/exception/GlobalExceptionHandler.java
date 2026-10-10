@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-
 import java.util.Date;
 import java.util.List;
 
@@ -19,8 +18,7 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<Void> handleNoResourceFound(
-            org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+    public ResponseEntity<Void> handleNoResourceFound() {
         return ResponseEntity.notFound().build();
     }
 
