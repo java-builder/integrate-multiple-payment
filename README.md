@@ -67,27 +67,45 @@ mvn clean spring-boot:run
 
 ---
 
-## 💳 Sơ đồ & Luồng hoạt động Cổng thanh toán
+## 💳 Sơ đồ Luồng hoạt động Cổng thanh toán VNPay
 
-Cả hai cổng thanh toán đều hoạt động theo mô hình **Chuyển hướng an toàn (Redirect Flow)** để khách hàng thanh toán trực tiếp trên hạ tầng bảo mật của cổng:
+Cổng thanh toán VNPay hoạt động theo mô hình **Chuyển hướng an toàn (Redirect Flow)** để khách hàng thanh toán trực tiếp trên hạ tầng bảo mật của cổng:
 
-### 1. Sơ đồ Stripe Checkout
-![Stripe Checkout Sequence Diagram](https://res.cloudinary.com/drdskl2up/image/upload/v1784366420/a9557fe0-4ba8-46f1-89fb-0baeaa8f8d8e.png)
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer as Khách hàng (Client / Frontend)
+    participant Backend as Backend (Spring Boot)
+    participant DB as Database (MySQL)
+    participant VNPay as Cổng VNPay (Sandbox / Gateway)
 
-### 2. Luồng hoạt động Cổng thanh toán VNPay
-```text
-[Khách hàng] ──(1. Đặt hàng)──> [Backend: Tạo OrderCode]
-     │                                    │
-     │ <───(2. Trả về paymentUrl VNPay)───┤ (Ký số HMAC-SHA512 với vnp_HashSecret)
-     │
-     ├───(3. Chuyển hướng sang VNPay Sandbox: vpcpay.html)───> [Cổng VNPay]
-     │                                                             │
-     │    (Khách hàng quét QR hoặc nhập thẻ ATM NCB / Visa)       │
-     │                                                             │
-     │ <──(4. Xác thực thành công & Redirect về ReturnUrl)────────┘
-     │        (kèm vnp_ResponseCode=00 & vnp_SecureHash)
-     v
-[Backend: /api/payments/vnpay-callback] ──> [Hiển thị Trang Thành công (success.html)]
+    Note over Customer,Backend: Bước 1: Khởi tạo đơn hàng (Order Creation)
+    Customer->>Backend: POST /api/orders (Thông tin giỏ hàng)
+    Backend->>DB: Lưu đơn hàng (status: PENDING) & chi tiết sản phẩm
+    Backend-->>Customer: Trả về thông tin đơn hàng & orderCode
+
+    Note over Customer,VNPay: Bước 2: Khởi tạo URL thanh toán (Payment Initiation)
+    Customer->>Backend: POST /api/payments/initiate (gateway: VNPAY, orderCode)
+    Backend->>Backend: Chuẩn hóa tham số (vnp_Amount * 100, vnp_TxnRef, vnp_ReturnUrl)
+    Backend->>Backend: Ký số bảo mật HMAC-SHA512 với secretKey sinh vnp_SecureHash
+    Backend->>DB: Lưu giao dịch thanh toán (status: PENDING)
+    Backend-->>Customer: Trả về paymentUrl (đường dẫn vpcpay.html)
+
+    Note over Customer,VNPay: Bước 3: Chuyển hướng & Thanh toán trên VNPay
+    Customer->>VNPay: Redirect sang cổng thanh toán VNPay (paymentUrl)
+    Customer->>VNPay: Quét VNPAY-QR hoặc nhập thẻ ATM / OTP ngân hàng
+    VNPay->>VNPay: Xác thực tài khoản & trừ tiền khách hàng
+
+    Note over Customer,VNPay: Bước 4: Điều hướng trở lại website (Return URL)
+    alt Thanh toán thành công (vnp_ResponseCode = 00)
+        VNPay-->>Customer: Redirect về ReturnUrl (/api/payments/vnpay-callback?vnp_ResponseCode=00&...)
+        Customer->>Backend: GET /api/payments/vnpay-callback
+        Backend-->>Customer: Hiển thị trang kết quả thành công (success.html)
+    else Giao dịch thất bại hoặc Khách hàng hủy
+        VNPay-->>Customer: Redirect về ReturnUrl (/api/payments/vnpay-callback?vnp_ResponseCode!=00)
+        Customer->>Backend: GET /api/payments/vnpay-callback
+        Backend-->>Customer: Hiển thị trang kết quả hủy giao dịch (cancel.html)
+    end
 ```
 
 ---
@@ -201,7 +219,7 @@ Gửi request `POST http://localhost:8080/api/payments/initiate`:
 
 Dưới đây là tổng hợp đầy đủ các tài liệu hướng dẫn kỹ thuật chính thức, đường dẫn tải code mẫu Java và thông tin môi trường Sandbox phục vụ quá trình tích hợp.
 
-### 🇻🇳 1. Cổng thanh toán VNPAY (VNPAY Payment Gateway)
+### 🇻🇳 Cổng thanh toán VNPAY (VNPAY Payment Gateway)
 
 * **Trang chủ tài liệu kỹ thuật VNPAY:** [https://sandbox.vnpayment.vn/apis/](https://sandbox.vnpayment.vn/apis/)
 * **Hướng dẫn tích hợp thanh toán (Redirect PAY - Bản chuẩn 2.1.0):** [VNPAY Thanh toán PAY Docs](https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html)
@@ -235,21 +253,4 @@ Dưới đây là tổng hợp đầy đủ các tài liệu hướng dẫn kỹ
   * **CVC/CVV:** `123`
   * **Hạn sử dụng:** `12/26`
   * **Tên chủ thẻ:** `NGUYEN VAN A`
-
----
-
-### 💳 2. Cổng thanh toán Quốc tế Stripe (Stripe for Java)
-
-* **Trang chủ tài liệu Stripe Docs:** [https://stripe.com/docs](https://stripe.com/docs)
-* **Thư viện chính thức Stripe Java SDK (GitHub):** [stripe/stripe-java](https://github.com/stripe/stripe-java)
-* **Tài liệu Stripe Checkout (Prebuilt Checkout Page):** [Stripe Checkout Overview](https://stripe.com/docs/payments/checkout)
-* **Tài liệu API Reference (Ngôn ngữ Java):** [Stripe API Reference - Java](https://stripe.com/docs/api?lang=java)
-* **Xử lý tính bất biến & chống trùng lặp (Idempotency Requests):** [Stripe Idempotent Requests](https://stripe.com/docs/api/idempotent_requests)
-* **Quy chuẩn đơn vị tiền tệ & Zero-decimal currencies:** [Stripe Currencies Guide](https://stripe.com/docs/currencies#zero-decimal)
-* **Xử lý sự kiện Webhook trong Java (Spring Boot Handler):** [Stripe Webhooks Guide](https://stripe.com/docs/webhooks)
-* **Stripe CLI (Kiểm thử & forward webhook localhost):** [Stripe CLI Documentation](https://stripe.com/docs/stripe-cli)
-* **Danh sách thẻ test và mã lỗi mô phỏng (Testing & Test Cards):** [Stripe Testing Guide](https://stripe.com/docs/testing)
-  * **Thẻ thanh toán thành công mặc định:** `4242 4242 4242 4242` (Mọi ngày hết hạn tương lai, CVC bất kỳ).
-  * **Thẻ từ chối (Card Declined):** `4000 0000 0000 0002`
-  * **Thẻ yêu cầu xác thực 3D Secure (3DS Authentication):** `4000 0000 0000 3063`
 
