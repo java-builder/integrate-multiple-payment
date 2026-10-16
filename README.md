@@ -1,260 +1,678 @@
-# E-Commerce Multi-Gateway Payment Integration (Spring Boot 4, Stripe & VNPay)
+# 🅿️ Hướng Dẫn Tích Hợp Cổng Thanh Toán PayPal (PayPal Gateway for Java & Spring Boot)
 
-Dự án mẫu hướng dẫn tích hợp hệ thống thanh toán trực tuyến đa cổng (**Stripe**, **VNPay**,...) vào ứng dụng Spring Boot 4 một cách chuyên nghiệp, áp dụng các **Design Pattern** chuẩn doanh nghiệp (**Strategy Pattern**, **Factory Pattern**), phân tách rõ ràng giữa luồng Đặt hàng (Order) và Khởi tạo thanh toán (Payment Initiation).
-
-### 📖 Tài liệu chuyên biệt từng cổng thanh toán:
-* 💳 **[Hướng dẫn tích hợp Cổng Stripe Checkout (STRIPE.md)](./docs/STRIPE.md)**: Chi tiết từ A-Z cấu hình `StripeClient`, `StripePaymentStrategy`, quy chuẩn Zero-Decimal Currency và Idempotency Key.
-* 🅿️ **[Hướng dẫn tích hợp Cổng PayPal (PAYPAL.md)](./docs/PAYPAL.md)**: Chi tiết PayPal Server SDK v2.4.0 (Orders API v2), cấu hình `PaypalServerSdkClient`, `PaypalPaymentStrategy`, xử lý `itemTotal` và hạn mức giao dịch Sandbox.
-* 🇻🇳 **[Hướng dẫn tích hợp Cổng VNPAY Sandbox (VNPAY.md)](./docs/VNPAY.md)**: Chi tiết chuẩn kỹ thuật VNPAY 2.1.0, hàm băm `HMAC-SHA512`, `VnPayPaymentStrategy`, thẻ test NCB/Visa, và mã lỗi `vnp_ResponseCode`.
+Tài liệu hướng dẫn chi tiết toàn bộ quy trình tích hợp cổng thanh toán trực tuyến toàn cầu **PayPal** (sử dụng thư viện chính thức **PayPal Server SDK v2.4.0** - Orders API v2) vào ứng dụng **Java Spring Boot**, áp dụng mô hình thiết kế chuẩn **Strategy Pattern + Factory Pattern**. Hỗ trợ thanh toán qua Ví PayPal (PayPal Wallet), Thẻ thanh toán quốc tế và quy trình chuyển hướng phê duyệt (Buyer Approval Redirect Flow).
 
 ---
 
-## 📌 Điểm nổi bật của kiến trúc
-
-1. **Áp dụng bộ đôi Strategy + Factory Pattern:**
-   * Dễ dàng cắm/rút hoặc mở rộng thêm cổng thanh toán mới (**VNPay**, **Stripe**, **PayPal**, **VietQR**) mà không làm sửa đổi code hiện tại (Tuân thủ nguyên tắc **Open/Closed Principle**).
-   * Tận dụng Spring IoC Container để tự động nạp tất cả các Strategy Bean (`StripePaymentStrategy`, `VnPayPaymentStrategy`) vào `Map` một cách linh hoạt.
-2. **Tách biệt ranh giới nghiệp vụ (Decoupled Architecture):**
-   * Tầng Strategy hoàn toàn độc lập với JPA Entities (`Order`, `Product`), chỉ giao tiếp thông qua hợp đồng dữ liệu chuẩn `PaymentGatewayCommand` và `LineItem`.
-3. **Phân tách 2 pha: Tạo đơn trước (Order) ➜ Khởi tạo thanh toán sau (Payment):**
-   * Cho phép khách hàng đổi phương thức thanh toán hoặc thử thanh toán lại khi bị từ chối thẻ mà không làm rác hay hủy đơn hàng.
-4. **Tối ưu hiệu năng & An toàn dữ liệu:**
-   * Tách biệt `@Transactional` khỏi các lời gọi mạng HTTP hoặc tạo checksum sang cổng thanh toán.
-   * Sử dụng **Idempotency Key** trên Stripe chống trừ tiền trùng lặp khi mạng lag.
-   * Xử lý chính xác thuật toán băm chữ ký số **HMAC-SHA512** bảo mật toàn vẹn dữ liệu cho VNPay (chuẩn API 2.1.0).
-   * Xử lý chuẩn tiền tệ quốc tế (**Zero-Decimal Currency**): Tự động quy đổi USD sang Cents (`* 100`), giữ nguyên VND cho Stripe; nhân 100 khử số thập phân cho VNPay.
-
-### Công nghệ sử dụng:
-* **Backend:** Spring Boot 4.1.0, Spring Data JPA
-* **Java Version:** JDK 25
-* **Database:** MySQL 8.x
-* **Cổng thanh toán:** 
-  * **Stripe:** Stripe Java SDK (v33.1.1)
-  * **VNPay:** VNPay Sandbox Gateway (v2.1.0, HMAC-SHA512 checksum)
+## 📌 Mục Lục
+1. [Tài liệu chính thức & Tài nguyên PayPal](#1-tai-lieu-chinh-thuc-tai-nguyen-paypal)
+2. [Kiến trúc & Luồng hoạt động (Sequence Diagram)](#2-kien-truc-luong-hoat-dong-sequence-diagram)
+3. [Môi trường Sandbox & Tài khoản kiểm thử (Test Accounts)](#3-moi-truong-sandbox-tai-khoan-kiem-thu-test-accounts)
+4. [Cấu hình tham số Spring Boot (application.yaml & pom.xml)](#4-cau-hinh-tham-so-spring-boot-applicationyaml-pomxml)
+5. [Cấu trúc mã nguồn & Triển khai chi tiết (Strategy Pattern)](#5-cau-truc-ma-nguon-trien-khai-chi-tiet-strategy-pattern)
+   * [5.1. Cấu hình PaypalServerSdkClient Bean (PaypalClientConfiguration)](#51-cau-hinh-paypalserversdkclient-bean-paypalclientconfiguration)
+   * [5.2. Khế ước chung (PaymentStrategy & PaymentGatewayCommand)](#52-khe-uoc-chung-paymentstrategy-paymentgatewaycommand)
+   * [5.3. Chiến lược thanh toán PayPal (PaypalPaymentStrategy)](#53-chien-luoc-thanh-toan-paypal-paypalpaymentstrategy)
+   * [5.4. Nhà máy khởi tạo (PaymentStrategyFactory)](#54-nha-may-khoi-tao-paymentstrategyfactory)
+   * [5.5. Tầng nghiệp vụ thanh toán (PaymentService)](#55-tang-nghiep-vu-thanh-toan-paymentservice)
+   * [5.6. Lớp API tiếp nhận (PaymentController)](#56-lop-api-tiep-nhan-paymentcontroller)
+   * [5.7. Xử lý Return / Cancel URL (ViewController)](#57-xu-ly-return-cancel-url-viewcontroller)
+6. [Quy chuẩn xử lý & Các lỗi thường gặp (Lưu ý sống còn)](#6-quy-chuan-xu-ly-cac-loi-thuong-gap-luu-y-song-con)
+   * [6.1. Lỗi lệch số tiền (Payment amount mismatch)](#61-loi-lech-so-tien-payment-amount-mismatch)
+   * [6.2. Lỗi vượt hạn mức (TRANSACTION_LIMIT_EXCEEDED - 422)](#62-loi-vuot-han-muc-transaction-limit-exceeded-422)
+   * [6.3. Giới hạn tiền tệ của PayPal (Không hỗ trợ VND)](#63-gioi-han-tien-te-cua-paypal-khong-ho-tro-vnd)
+7. [Hướng dẫn kiểm thử thực tế (Testing & API Requests)](#7-huong-dan-kiem-thu-thuc-te-testing-api-requests)
 
 ---
 
-## 💻 Thiết lập & Khởi chạy nhanh
+<a id="1-tai-lieu-chinh-thuc-tai-nguyen-paypal"></a>
+## 1. 📚 Tài liệu chính thức & Tài nguyên PayPal
 
-### 1. Yêu cầu hệ thống
-* Java Development Kit (JDK) 25.
-* Docker và Docker Compose (để khởi chạy MySQL).
+* **Trang chủ tài liệu tích hợp PayPal Developer:** [https://developer.paypal.com/docs](https://developer.paypal.com/docs)
+* **Tài liệu Orders v2 API:** [PayPal Orders v2 API Reference](https://developer.paypal.com/docs/api/orders/v2/)
+* **Kho lưu trữ chính thức PayPal Server SDK Java (GitHub):** [paypal/paypal-server-sdk-java](https://github.com/paypal/paypal-server-sdk-java)
+* **Quản lý Ứng dụng & Credentials Sandbox:** [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/applications/sandbox)
+* **Danh sách tiền tệ PayPal hỗ trợ:** [PayPal Supported Currencies](https://developer.paypal.com/api/rest/reference/currency-codes/)
+* **Bảng mã lỗi chi tiết của Orders API v2:** [PayPal Error Messages - Orders v2](https://developer.paypal.com/api/rest/reference/orders/v2/errors/)
 
-### 2. Khởi chạy MySQL
-Dự án đã có sẵn cấu hình Docker. Bạn mở Terminal tại thư mục gốc và chạy lệnh:
-```bash
-docker-compose up -d
+---
+
+<a id="2-kien-truc-luong-hoat-dong-sequence-diagram"></a>
+## 2. 🏗️ Kiến trúc & Luồng hoạt động (Sequence Diagram)
+
+Mô hình thanh toán PayPal Orders API v2 với `intent=CAPTURE` theo quy trình chuẩn **Redirect Flow**:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Khách hàng (Trình duyệt)
+    participant Server as Merchant Backend (Spring Boot)
+    participant PayPal as Cổng PayPal Sandbox (v2/checkout/orders)
+
+    User->>Server: 1. Đặt hàng (POST /api/orders)
+    Server-->>User: Trả về orderCode (Trạng thái PENDING)
+    User->>Server: 2. Chọn PAYPAL & Khởi tạo (POST /api/payments/initiate)
+    Note over Server: Tính itemTotal = sum(unitPrice * quantity)
+    Note over Server: Kiểm tra itemTotal == orderAmount
+    Server->>PayPal: 3. POST /v2/checkout/orders (body=OrderRequest, paypalRequestId=checkout-{orderCode})
+    PayPal-->>Server: Trả về Order JSON (chứa id & links có rel="payer-action")
+    Server->>Server: 4. Lưu Payment (PENDING, gatewayTransactionId = order.id)
+    Server-->>User: 5. Trả về paymentUrl (Link payer-action chuyển sang PayPal)
+    User->>PayPal: 6. Chuyển hướng sang giao diện đăng nhập Ví PayPal Sandbox
+    User->>PayPal: 7. Đăng nhập tài khoản Buyer Sandbox & Bấm "Pay Now"
+    alt Khách hàng Phê duyệt Thanh toán
+        PayPal-->>User: 8a. Chuyển hướng về returnUrl (/api/payments/success?token=...)
+        Server-->>User: 9a. Hiển thị trang Thành công (success.html)
+    else Khách hàng Hủy thanh toán
+        PayPal-->>User: 8b. Chuyển hướng về cancelUrl (/api/payments/cancel)
+        Server-->>User: 9b. Hiển thị trang Đã hủy (cancel.html)
+    end
 ```
 
-### 3. Cấu hình Cổng thanh toán (Stripe & VNPay)
-Mở tệp [application.yaml](./src/main/resources/application.yaml) và điền các thông số kết nối:
+---
 
+<a id="3-moi-truong-sandbox-tai-khoan-kiem-thu-test-accounts"></a>
+## 3. 🧪 Môi trường Sandbox & Tài khoản kiểm thử (Test Accounts)
+
+### 3.1. Lấy Client ID và Client Secret
+1. Đăng nhập vào [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/).
+2. Vào menu **Apps & Credentials** ➜ Chọn tab **Sandbox**.
+3. Chọn ứng dụng mặc định (**Default Application**) hoặc tạo App mới:
+   * **Client ID:** Sao chép chuỗi mã định danh client.
+   * **Secret:** Nhấn *Show* và sao chép khóa bí mật client.
+
+### 3.2. Tài khoản người mua Sandbox (Sandbox Buyer Account)
+1. Vào menu **Testing Tools** ➜ **Sandbox Accounts**.
+2. Tìm tài khoản loại **Personal** (Buyer):
+   * **Email:** Dạng `sb-xxxxxx@personal.example.com`.
+   * **Password:** Nhấn vào tài khoản ➜ Chọn *View/Edit account* để xem mật khẩu.
+3. Số dư mặc định của tài khoản Sandbox: Thường là **$5,000 USD** (có thể nạp thêm tiền trong phần quản trị Sandbox).
+
+---
+
+<a id="4-cau-hinh-tham-so-spring-boot-applicationyaml-pomxml"></a>
+## 4. ⚙️ Cấu hình tham số Spring Boot (application.yaml & pom.xml)
+
+### 4.1. Thư viện phụ thuộc `pom.xml`
+Dự án sử dụng thư viện chính thức mới nhất của PayPal Server SDK:
+
+```xml
+<dependency>
+    <groupId>com.paypal.sdk</groupId>
+    <artifactId>paypal-server-sdk</artifactId>
+    <version>2.4.0</version>
+</dependency>
+```
+
+### 4.2. Cấu hình kết nối trong `src/main/resources/application.yaml`
 ```yaml
-# Cấu hình Stripe Test
-stripe:
-  api-key: ${STRIPE_API_KEY:sk_test_YOUR_SECRET_KEY}
-  success-url: http://localhost:8080/api/payments/success
-  cancel-url: http://localhost:8080/api/payments/cancel
-
-# Cấu hình VNPay Sandbox
-vnpay:
-  tmn-code: T3NIHXVR
-  secret-key: XFHCCKKDCCZKXNXIVGUKIVIWKGHMHVZU
-  vnp-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-  return-url: http://localhost:8080/api/payments/vnpay-callback
+paypal:
+  client-id: ${PAYPAL_CLIENT_ID:YOUR_SANDBOX_CLIENT_ID}
+  client-secret: ${PAYPAL_CLIENT_SECRET:YOUR_SANDBOX_CLIENT_SECRET}
+  return-url: ${PAYPAL_RETURN_URL:http://localhost:8080/api/payments/success}
+  cancel-url: ${PAYPAL_CANCEL_URL:http://localhost:8080/api/payments/cancel}
 ```
 
-### 4. Chạy ứng dụng
-Biên dịch và khởi chạy dự án:
-```bash
-mvn clean spring-boot:run
+* `paypal.client-id`: Mã Client ID tài khoản Sandbox từ Developer Dashboard.
+* `paypal.client-secret`: Mã bí mật Client Secret.
+* `paypal.return-url`: URL nhận chuyển hướng khi người mua bấm xác nhận thanh toán trên PayPal.
+* `paypal.cancel-url`: URL nhận chuyển hướng khi người mua bấm huỷ thanh toán trên PayPal.
+
+---
+
+<a id="5-cau-truc-ma-nguon-trien-khai-chi-tiet-strategy-pattern"></a>
+## 5. 💻 Cấu trúc mã nguồn & Triển khai chi tiết (Strategy Pattern)
+
+Toàn bộ logic được chuẩn hóa theo mô hình **Strategy Pattern**. Code được chú thích rõ ràng bên trong và giải thích chi tiết ngay bên dưới từng lớp.
+
+<a id="51-cau-hinh-paypalserversdkclient-bean-paypalclientconfiguration"></a>
+### 5.1. Cấu hình PaypalServerSdkClient Bean (`PaypalClientConfiguration.java`)
+
+```java
+package com.javabuilder.stripe.configuration;
+
+import com.paypal.sdk.Environment;
+import com.paypal.sdk.PaypalServerSdkClient;
+import com.paypal.sdk.authentication.ClientCredentialsAuthModel;
+import org.slf4j.event.Level;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class PaypalClientConfiguration {
+
+    // 1. Tiêm Client ID từ file cấu hình application.yaml
+    @Value("${paypal.client-id}")
+    private String clientId;
+
+    // 2. Tiêm Client Secret từ file cấu hình application.yaml
+    @Value("${paypal.client-secret}")
+    private String clientSecret;
+
+    @Bean
+    PaypalServerSdkClient paypalServerSdkClient() {
+        return new PaypalServerSdkClient.Builder()
+                // 3. Cấu hình logging HTTP request/response để debug trong quá trình tích hợp
+                .loggingConfig(builder -> builder
+                        .level(Level.INFO)
+                        .requestConfig(logConfigBuilder -> logConfigBuilder.body(true))
+                        .responseConfig(logConfigBuilder -> logConfigBuilder.body(true)))
+                // 4. Cài đặt timeout kết nối mạng (30 giây)
+                .httpClientConfig(configBuilder -> configBuilder.timeout(30))
+                // 5. Xác thực tự động bằng cơ chế OAuth2 Client Credentials
+                .clientCredentialsAuth(new ClientCredentialsAuthModel.Builder(
+                        clientId,
+                        clientSecret
+                ).build())
+                // 6. Trỏ môi trường sang SANDBOX (khi lên production đổi thành Environment.PRODUCTION)
+                .environment(Environment.SANDBOX)
+                .build();
+    }
+}
+```
+
+#### 🔍 Giải thích chi tiết các hàm và thành phần PayPal Server SDK:
+* **`PaypalServerSdkClient`**: Đối tượng Client chính thức của PayPal Server SDK (thay thế cho SDK REST cũ đã deprecated). Quản lý kết nối, tự động xin OAuth2 Bearer Token và điều phối các Controller con (như `OrdersController`).
+* **`ClientCredentialsAuthModel.Builder(clientId, clientSecret)`**: Đóng gói thông tin xác thực OAuth2 của PayPal. SDK sẽ tự động gửi request `POST /v1/oauth2/token` với `grant_type=client_credentials` để lấy Access Token và tự động refresh token trong suốt vòng đời ứng dụng.
+* **`environment(Environment.SANDBOX)`**: Định tuyến tất cả các lời gọi API tới máy chủ thử nghiệm PayPal Sandbox (`https://api-m.sandbox.paypal.com`). Khi triển khai môi trường thật chỉ cần đổi sang `Environment.PRODUCTION` (`https://api-m.paypal.com`).
+* **`loggingConfig`**: Bật cơ chế ghi log chi tiết nội dung Body của Request và Response HTTP của PayPal SDK ra Console để theo dõi trực quan quá trình giao tiếp.
+
+---
+
+<a id="52-khe-uoc-chung-paymentstrategy-paymentgatewaycommand"></a>
+### 5.2. Khế ước chung (`PaymentStrategy.java` & `PaymentGatewayCommand.java`)
+
+#### Giao diện chiến lược:
+```java
+package com.javabuilder.stripe.strategy;
+
+import com.javabuilder.stripe.common.PaymentGateway;
+import com.javabuilder.stripe.dto.response.PaymentGatewayResponse;
+import com.javabuilder.stripe.strategy.dto.PaymentGatewayCommand;
+
+public interface PaymentStrategy {
+    // Trả về định danh cổng thanh toán của chiến lược
+    PaymentGateway getPaymentGateway();
+
+    // Xử lý khởi tạo phiên thanh toán và trả về link thanh toán
+    PaymentGatewayResponse processPayment(PaymentGatewayCommand command);
+}
+```
+
+#### Dữ liệu đầu vào chuẩn hóa (DTO Command):
+```java
+package com.javabuilder.stripe.strategy.dto;
+
+import com.javabuilder.stripe.common.Currency;
+import lombok.Builder;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Builder
+public record PaymentGatewayCommand(
+        String orderCode,          // Mã đơn hàng định danh (ví dụ ORD-XXXXXXXX)
+        BigDecimal totalPrice,     // Tổng giá trị đơn hàng
+        Currency currency,         // Loại tiền tệ thanh toán (USD, VND)
+        String clientIp,           // Địa chỉ IP của khách hàng
+        List<LineItem> lineItems   // Danh sách chi tiết các mặt hàng trong đơn
+) {
+
+    @Builder
+    public record LineItem (
+            String name,           // Tên sản phẩm
+            Integer quantity,      // Số lượng mua
+            BigDecimal unitPrice   // Đơn giá của 1 sản phẩm
+    ) {}
+}
 ```
 
 ---
 
-## 💳 Sơ đồ & Luồng hoạt động Cổng thanh toán
+<a id="53-chien-luoc-thanh-toan-paypal-paypalpaymentstrategy"></a>
+### 5.3. Chiến lược thanh toán PayPal (`PaypalPaymentStrategy.java`)
 
-Cả hai cổng thanh toán đều hoạt động theo mô hình **Chuyển hướng an toàn (Redirect Flow)** để khách hàng thanh toán trực tiếp trên hạ tầng bảo mật của cổng:
+```java
+package com.javabuilder.stripe.strategy.paypal;
 
-### 1. Sơ đồ Stripe Checkout
-![Stripe Checkout Sequence Diagram](https://res.cloudinary.com/drdskl2up/image/upload/v1784366420/a9557fe0-4ba8-46f1-89fb-0baeaa8f8d8e.png)
+import com.javabuilder.stripe.common.Currency;
+import com.javabuilder.stripe.common.PaymentGateway;
+import com.javabuilder.stripe.dto.response.PaymentGatewayResponse;
+import com.javabuilder.stripe.exception.AppException;
+import com.javabuilder.stripe.exception.ErrorCode;
+import com.javabuilder.stripe.strategy.PaymentStrategy;
+import com.javabuilder.stripe.strategy.dto.PaymentGatewayCommand;
+import com.paypal.sdk.PaypalServerSdkClient;
+import com.paypal.sdk.exceptions.ApiException;
+import com.paypal.sdk.models.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-### 2. Luồng hoạt động Cổng thanh toán VNPay
-```text
-[Khách hàng] ──(1. Đặt hàng)──> [Backend: Tạo OrderCode]
-     │                                    │
-     │ <───(2. Trả về paymentUrl VNPay)───┤ (Ký số HMAC-SHA512 với vnp_HashSecret)
-     │
-     ├───(3. Chuyển hướng sang VNPay Sandbox: vpcpay.html)───> [Cổng VNPay]
-     │                                                             │
-     │    (Khách hàng quét QR hoặc nhập thẻ ATM NCB / Visa)       │
-     │                                                             │
-     │ <──(4. Xác thực thành công & Redirect về ReturnUrl)────────┘
-     │        (kèm vnp_ResponseCode=00 & vnp_SecureHash)
-     v
-[Backend: /api/payments/vnpay-callback] ──> [Hiển thị Trang Thành công (success.html)]
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j(topic = "PAYPAL-PAYMENT-STRATEGY")
+public class PaypalPaymentStrategy implements PaymentStrategy {
+
+    // 1. URL điều hướng người mua quay lại website khi thanh toán thành công
+    @Value("${paypal.return-url}")
+    private String returnUrl;
+
+    // 2. URL điều hướng người mua quay lại website khi bấm hủy thanh toán
+    @Value("${paypal.cancel-url}")
+    private String cancelUrl;
+
+    // 3. Tiêm PaypalServerSdkClient đã được cấu hình từ Spring context
+    private final PaypalServerSdkClient paypalServerSdkClient;
+
+    @Override
+    public PaymentGateway getPaymentGateway() {
+        return PaymentGateway.PAYPAL;
+    }
+
+    @Override
+    public PaymentGatewayResponse processPayment(PaymentGatewayCommand command) {
+        Currency currency = command.currency();
+        String code = currency.name();
+
+        List<ItemRequest> items = new ArrayList<>();
+        BigDecimal itemTotal = BigDecimal.ZERO;
+
+        // 4. Duyệt danh sách mặt hàng, tính đơn giá và cộng dồn tổng tiền hàng
+        for (PaymentGatewayCommand.LineItem itemLine : command.lineItems()) {
+            // Đơn giá cho 1 sản phẩm, làm tròn 2 chữ số thập phân
+            BigDecimal unitPrice = itemLine.unitPrice().setScale(2, RoundingMode.HALF_UP);
+            
+            // Tổng tiền cho dòng sản phẩm = đơn giá * số lượng
+            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(itemLine.quantity())).setScale(2, RoundingMode.HALF_UP);
+            
+            // BẮT BUỘC: Cộng dồn tiền mặt hàng vào itemTotal
+            itemTotal = itemTotal.add(lineTotal);
+
+            // Tạo đối tượng ItemRequest gửi sang PayPal (unit_amount là đơn giá của 1 sản phẩm)
+            ItemRequest item = new ItemRequest.Builder(
+                    itemLine.name(),
+                    new Money(code, unitPrice.toPlainString()),
+                    itemLine.quantity().toString()
+            ).build();
+            items.add(item);
+        }
+
+        // 5. Chuẩn hóa chuỗi số tiền 2 chữ số thập phân để so sánh đối soát
+        String itemTotalValue = itemTotal.setScale(2, RoundingMode.HALF_UP).toPlainString();
+        String orderAmountValue = command.totalPrice().setScale(2, RoundingMode.HALF_UP).toPlainString();
+
+        // 6. Kiểm tra an toàn: Tổng tiền các item phải bằng tổng tiền đơn hàng
+        if (!itemTotalValue.equals(orderAmountValue)) {
+            log.error("Payment amount mismatch: calculated itemTotal={}, command totalPrice={}", itemTotalValue, orderAmountValue);
+            throw new AppException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
+        }
+
+        // 7. Tạo PurchaseUnitRequest chứa chi tiết breakdown và danh sách items
+        PurchaseUnitRequest purchaseUnitRequest = new PurchaseUnitRequest.Builder()
+                .amount(new AmountWithBreakdown.Builder()
+                        .value(itemTotalValue)
+                        .currencyCode(code)
+                        .breakdown(new AmountBreakdown.Builder()
+                                .itemTotal(new Money.Builder()
+                                        .value(itemTotalValue)
+                                        .currencyCode(code)
+                                        .build())
+                                .build())
+                        .build())
+                .items(items)
+                .customId(command.orderCode()) // Lưu mã đơn hàng vào custom_id để đối soát
+                .build();
+
+        // 8. Cấu hình OrderRequest với ý định CAPTURE (thu tiền ngay) và UX PAY_NOW
+        OrderRequest orderRequest = new OrderRequest.Builder()
+                .intent(CheckoutPaymentIntent.CAPTURE)
+                .purchaseUnits(List.of(purchaseUnitRequest))
+                .paymentSource(new PaymentSource.Builder()
+                        .paypal(new PaypalWallet.Builder()
+                                .experienceContext(new PaypalWalletExperienceContext.Builder()
+                                        .returnUrl(returnUrl)
+                                        .cancelUrl(cancelUrl)
+                                        .userAction(PaypalExperienceUserAction.PAY_NOW) // Hiển thị nút "Pay Now" thay vì "Continue"
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        // 9. Gắn Idempotency Key (paypalRequestId) chống gửi trùng lặp
+        CreateOrderInput createOrderInput = new CreateOrderInput.Builder()
+                .body(orderRequest)
+                .paypalRequestId("checkout-" + command.orderCode())
+                .build();
+
+        try {
+            // 10. Gọi API PayPal tạo phiên thanh toán Order
+            Order order = paypalServerSdkClient.getOrdersController()
+                    .createOrder(createOrderInput)
+                    .getResult();
+
+            // 11. Trích xuất đường link phê duyệt (rel = "payer-action")
+            String approveUrl = order.getLinks().stream()
+                    .filter(l -> "payer-action".equals(l.getRel()))
+                    .map(LinkDescription::getHref)
+                    .findFirst()
+                    .orElseThrow(() -> new AppException(ErrorCode.PAYPAL_INTEGRATION_FAILED));
+
+            // 12. Trả về kết quả gồm PayPal Order ID và Approve URL
+            return PaymentGatewayResponse.builder()
+                    .gatewayTransactionId(order.getId())
+                    .paymentUrl(approveUrl)
+                    .build();
+
+        } catch (IOException | ApiException e) {
+            log.error("PayPal order creation failed", e);
+            throw new AppException(ErrorCode.PAYPAL_INTEGRATION_FAILED);
+        }
+    }
+}
+```
+
+#### 🔍 Giải thích chi tiết hàm và logic xử lý:
+* **`itemTotal = itemTotal.add(lineTotal)`**: Đây là bước cốt lõi. PayPal yêu cầu trường `breakdown.item_total.value` phải bằng chính xác tổng của các `(item.unit_amount * item.quantity)`. Nếu không cộng dồn, `itemTotal` sẽ là `0.00` và gây lỗi `PAYMENT_AMOUNT_MISMATCH`.
+* **`ItemRequest.Builder(name, unitPrice, quantity)`**: Tham số thứ 2 là **đơn giá của 1 sản phẩm**, không phải tổng tiền cả dòng. PayPal sẽ tự nhân `unitPrice * quantity`.
+* **`CheckoutPaymentIntent.CAPTURE`**: Thiết lập để khi người dùng phê duyệt, hệ thống sẽ thực hiện trừ tiền trực tiếp vào tài khoản người mua (thay vì chỉ tạm giữ qua `AUTHORIZE`).
+* **`PaypalExperienceUserAction.PAY_NOW`**: Khi người dùng vào trang PayPal, nút bấm cuối cùng sẽ là **"Pay Now" (Thanh toán ngay)**, mang lại tỉ lệ chuyển đổi cao hơn so với mặc định là "Continue".
+* **`paypalRequestId("checkout-" + command.orderCode())`**: Tương tự Idempotency Key của Stripe, tham số này đảm bảo nếu mạng lag gửi lại request thì PayPal chỉ trả về đơn đã tạo, không bao giờ tạo 2 đơn trùng lặp.
+* **`payer-action link`**: Trong danh sách `links` trả về từ PayPal SDK v2, đường link dẫn người dùng đến trang phê duyệt thanh toán có `rel = "payer-action"`.
+
+---
+
+<a id="54-nha-may-khoi-tao-paymentstrategyfactory"></a>
+### 5.4. Nhà máy khởi tạo (`PaymentStrategyFactory.java`)
+
+```java
+package com.javabuilder.stripe.strategy;
+
+import com.javabuilder.stripe.common.PaymentGateway;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+@Component
+@Slf4j(topic = "PAYMENT-STRATEGY-FACTORY")
+public class PaymentStrategyFactory {
+
+    // Bảng tra cứu ánh xạ giữa Gateway Enum và Strategy implementation tương ứng
+    private final Map<PaymentGateway, PaymentStrategy> paymentStrategyMap;
+
+    // 1. Spring tự động tiêm tất cả các Bean triển khai giao diện PaymentStrategy
+    public PaymentStrategyFactory(List<PaymentStrategy> strategies) {
+        this.paymentStrategyMap = strategies.stream()
+                .collect(Collectors.toMap(PaymentStrategy::getPaymentGateway, Function.identity()));
+        log.info("PaymentStrategyFactory loaded successfully with gateways: {}", paymentStrategyMap.keySet());
+    }
+
+    // 2. Lấy ra chiến lược thanh toán tương ứng dựa theo enum gửi lên
+    public PaymentStrategy getPaymentStrategy(PaymentGateway paymentGateway) {
+        return Optional.ofNullable(paymentStrategyMap.get(paymentGateway))
+                .orElseThrow(() -> new IllegalArgumentException("Payment strategy not found for gateway: " + paymentGateway));
+    }
+}
+```
+
+#### 🔍 Giải thích chi tiết:
+* **Tự động đăng ký Strategy (Auto-registration)**: Bằng cách nhận `List<PaymentStrategy>`, Spring IoC tự động phát hiện mọi Bean (`PaypalPaymentStrategy`, `StripePaymentStrategy`, `VnPayPaymentStrategy`) và đưa vào `Map`. Khi thêm cổng mới (ví dụ `VietQR`), bạn không cần sửa code của Factory (tuân thủ nguyên tắc Open/Closed).
+
+---
+
+<a id="55-tang-nghiep-vu-thanh-toan-paymentservice"></a>
+### 5.5. Tầng nghiệp vụ thanh toán (`PaymentService.java`)
+
+```java
+package com.javabuilder.stripe.service;
+
+import com.javabuilder.stripe.common.OrderStatus;
+import com.javabuilder.stripe.common.PaymentStatus;
+import com.javabuilder.stripe.dto.request.PaymentInitRequest;
+import com.javabuilder.stripe.dto.response.PaymentGatewayResponse;
+import com.javabuilder.stripe.dto.response.PaymentInitResponse;
+import com.javabuilder.stripe.entity.Order;
+import com.javabuilder.stripe.entity.Payment;
+import com.javabuilder.stripe.exception.AppException;
+import com.javabuilder.stripe.exception.ErrorCode;
+import com.javabuilder.stripe.repository.OrderRepository;
+import com.javabuilder.stripe.repository.PaymentRepository;
+import com.javabuilder.stripe.strategy.PaymentStrategy;
+import com.javabuilder.stripe.strategy.PaymentStrategyFactory;
+import com.javabuilder.stripe.strategy.dto.PaymentGatewayCommand;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j(topic = "PAYMENT-SERVICE")
+public class PaymentService {
+
+    private final PaymentRepository paymentRepository;
+    private final OrderRepository orderRepository;
+    private final PaymentStrategyFactory paymentStrategyFactory;
+
+    @Transactional(rollbackFor = Exception.class)
+    public PaymentInitResponse initiatePayment(PaymentInitRequest request, String clientIp) {
+        // 1. Kiểm tra đơn hàng có tồn tại trong hệ thống không
+        Order order = orderRepository.findByOrderCode(request.orderCode())
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        // 2. Không cho phép thanh toán đơn hàng đã hoàn tất
+        if (order.getOrderStatus() == OrderStatus.SUCCESS) {
+            throw new IllegalStateException("This order has already been paid!");
+        }
+
+        // 3. Đóng gói dữ liệu sang PaymentGatewayCommand độc lập
+        PaymentGatewayCommand command = PaymentGatewayCommand.builder()
+                .orderCode(order.getOrderCode())
+                .totalPrice(order.getTotalPrice())
+                .currency(order.getCurrency())
+                .clientIp(clientIp)
+                .lineItems(order.getOrderDetails().stream().map(orderDetail -> PaymentGatewayCommand.LineItem.builder()
+                        .name(orderDetail.getProduct().getName())
+                        .quantity(orderDetail.getQuantity())
+                        .unitPrice(orderDetail.getPrice())
+                        .build())
+                        .toList())
+                .build();
+
+        // 4. Lấy Strategy tương ứng thông qua Factory và thực thi
+        PaymentStrategy paymentStrategy = paymentStrategyFactory.getPaymentStrategy(request.paymentGateway());
+        PaymentGatewayResponse paymentGatewayResponse = paymentStrategy.processPayment(command);
+
+        // 5. Lưu thông tin giao dịch vào bảng payments với trạng thái PENDING
+        Payment payment = Payment.builder()
+                .order(order)
+                .paymentGateway(request.paymentGateway())
+                .amount(order.getTotalPrice())
+                .currency(order.getCurrency())
+                .gatewayTransactionId(paymentGatewayResponse.gatewayTransactionId())
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+        paymentRepository.save(payment);
+        log.info("Payment transaction saved successfully. ID: {}, Gateway TxID: {}", payment.getId(), paymentGatewayResponse.gatewayTransactionId());
+
+        // 6. Trả về paymentUrl cho phía Client chuyển hướng
+        return PaymentInitResponse.builder()
+                .paymentUrl(paymentGatewayResponse.paymentUrl())
+                .gatewayTransactionId(paymentGatewayResponse.gatewayTransactionId())
+                .build();
+    }
+}
+```
+
+#### 🔍 Giải thích chi tiết nghiệp vụ:
+* **`command` (Command DTO Pattern)**: Đóng gói toàn bộ thông tin đơn hàng dựa trên mã định danh duy nhất `orderCode` (`order.getOrderCode()`). Nhờ đó, tầng Strategy thanh toán hoàn toàn độc lập với các Entity DB.
+* **`paymentRepository.save(payment)`**: Lưu mã giao dịch do PayPal sinh ra (`order.getId()`) vào cột `gatewayTransactionId`, gắn kết chặt chẽ với bản ghi đơn hàng mang mã `orderCode` để phục vụ đối soát, tra soát Webhook hoặc hoàn tiền sau này.
+
+---
+
+<a id="56-lop-api-tiep-nhan-paymentcontroller"></a>
+### 5.6. Lớp API tiếp nhận (`PaymentController.java`)
+
+```java
+package com.javabuilder.stripe.controller;
+
+import com.javabuilder.stripe.dto.request.PaymentInitRequest;
+import com.javabuilder.stripe.dto.response.ApiResponse;
+import com.javabuilder.stripe.dto.response.PaymentInitResponse;
+import com.javabuilder.stripe.service.PaymentService;
+import com.javabuilder.stripe.util.HttpUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/payments")
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    // Endpoint khởi tạo thanh toán: POST /api/payments/initiate
+    @PostMapping("/initiate")
+    @ResponseStatus(HttpStatus.CREATED)
+    ApiResponse<PaymentInitResponse> initiatePayment(@RequestBody @Valid PaymentInitRequest request, HttpServletRequest httpServletRequest) {
+        // Lấy địa chỉ IP thực tế của client
+        String clientIp = HttpUtils.getClientIpAddress(httpServletRequest);
+        
+        // Gọi Service xử lý nghiệp vụ
+        var data = paymentService.initiatePayment(request, clientIp);
+        
+        return ApiResponse.<PaymentInitResponse>builder()
+                .status("success")
+                .message("Payment initiated successfully")
+                .data(data)
+                .build();
+    }
+}
 ```
 
 ---
 
-## 🖥️ Giao diện người dùng (Thymeleaf Frontend)
+<a id="57-xu-ly-return-cancel-url-viewcontroller"></a>
+### 5.7. Xử lý Return / Cancel URL (`ViewController.java`)
 
-Dự án tích hợp sẵn giao diện mua hàng và thanh toán trực quan sử dụng **Thymeleaf**:
-* **Trang chủ cửa hàng (`/`):** Hiển thị danh sách sản phẩm với ảnh, giá, nút Thêm vào giỏ và xem chi tiết.
-* **Trang chi tiết sản phẩm (`/products/{id}`):** Xem chi tiết sản phẩm và bấm Mua ngay.
-* **Trang thanh toán (`/checkout`):** Xem giỏ hàng, chọn loại tiền tệ và lựa chọn cổng thanh toán (**VNPAY**, **Stripe**, cùng trạng thái sẵn sàng cho **PayPal**, **VietQR**).
-* **Trang kết quả:** Trang thành công (`/api/payments/success`, `/api/payments/vnpay-callback`) và Trang hủy (`/api/payments/cancel`).
+```java
+package com.javabuilder.stripe.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+@Controller
+public class ViewController {
+
+    // Khi người mua xác nhận thanh toán trên PayPal và được chuyển về returnUrl
+    @GetMapping("/api/payments/success")
+    public String success(@RequestParam(value = "token", required = false) String token, Model model) {
+        model.addAttribute("sessionId", token != null ? "PAYPAL-" + token : "PAYPAL-SUCCESS");
+        return "success";
+    }
+
+    // Khi người mua bấm hủy trên PayPal và chuyển về cancelUrl
+    @GetMapping("/api/payments/cancel")
+    public String cancel() {
+        return "cancel";
+    }
+}
+```
 
 ---
 
-## 🧪 Hướng dẫn Kiểm thử (Testing)
+<a id="6-quy-chuan-xu-ly-cac-loi-thuong-gap-luu-y-song-con"></a>
+## 6. ⚠️ Quy chuẩn xử lý & Các lỗi thường gặp (Lưu ý sống còn)
 
-Mở tệp tin **[api-requests.http](./api-requests.http)** và chạy lần lượt các bước kiểm thử:
+<a id="61-loi-lech-so-tien-payment-amount-mismatch"></a>
+### 6.1. Lỗi lệch số tiền (`Payment amount mismatch`)
+* **Nguyên nhân:** Biến `itemTotal` khởi tạo là `BigDecimal.ZERO` nhưng trong vòng lặp không cộng dồn `itemTotal = itemTotal.add(lineTotal)`, dẫn đến `itemTotal` là `0.00` và so sánh lệch với `totalPrice`.
+* **Khắc phục:** Đảm bảo `unitPrice` được tính trên từng đơn vị sản phẩm và `itemTotal` được cộng dồn theo từng dòng.
 
-### Bước 1: Tạo đơn hàng (Order Creation)
+<a id="62-loi-vuot-han-muc-transaction-limit-exceeded-422"></a>
+### 6.2. Lỗi vượt hạn mức giao dịch (`TRANSACTION_LIMIT_EXCEEDED` - HTTP 422)
+* **Thông báo lỗi từ PayPal:**
+  ```json
+  {
+    "name": "UNPROCESSABLE_ENTITY",
+    "details": [{"issue": "TRANSACTION_LIMIT_EXCEEDED", "description": "Total payment amount exceeded transaction limit."}]
+  }
+  ```
+* **Nguyên nhân:** Sản phẩm trong database có giá tính theo VND (ví dụ `89,000,000`), nhưng khi tạo đơn hàng lại chọn loại tiền tệ là `USD`. Tổng tiền gửi lên PayPal bị đẩy lên thành **$178,000,000.00 USD (178 triệu đô la)**!
+* **Hạn mức quy định của PayPal:** Tài khoản Sandbox hoặc tài khoản chưa nâng cấp doanh nghiệp chỉ cho phép thanh toán tối đa **$10,000 USD** cho 1 giao dịch. Bất kỳ giao dịch nào vượt mức này đều bị PayPal trả về lỗi 422 `TRANSACTION_LIMIT_EXCEEDED`.
+* **Cách khắc phục:** 
+  1. Khi kiểm thử với cổng PayPal, hãy tạo đơn hàng với giá trị thực tế của USD (ví dụ: $49.99, $100,...).
+  2. Không gán nhầm giá VND vào đơn hàng có currency là USD.
+
+<a id="63-gioi-han-tien-te-cua-paypal-khong-ho-tro-vnd"></a>
+### 6.3. Giới hạn tiền tệ của PayPal (Không hỗ trợ VND)
+* **Quy định của PayPal:** PayPal chỉ hỗ trợ 25 loại tiền tệ (USD, EUR, GBP, AUD, CAD, JPY, SGD, THB,...). **PayPal KHÔNG hỗ trợ đơn vị tiền tệ VND**.
+* Nếu bạn gửi `currency_code = "VND"` lên PayPal API, PayPal sẽ từ chối với lỗi `CURRENCY_NOT_SUPPORTED`.
+* Do đó, trong hệ thống bán hàng:
+  * Khách hàng thanh toán qua **VNPAY**: Tiền tệ bắt buộc là **VND**.
+  * Khách hàng thanh toán qua **PayPal**: Tiền tệ bắt buộc là **USD** (hoặc ngoại tệ được hỗ trợ).
+
+---
+
+<a id="7-huong-dan-kiem-thu-thuc-te-testing-api-requests"></a>
+## 7. 🧪 Hướng dẫn kiểm thử thực tế (Testing & API Requests)
+
+### Bước 1: Tạo đơn hàng USD (Giá trị hợp lệ < $10,000 USD)
 Gửi request `POST http://localhost:8080/api/orders`:
 ```json
 {
   "items": [
     {
-      "productId": 1,
+      "productId": 5,
       "quantity": 1
     }
   ],
-  "currency": "VND"
+  "currency": "USD"
 }
 ```
-* Sao chép mã `"orderCode"` trả về trong JSON (Ví dụ: `ORD-A1B2C3D4`).
+* Phản hồi: Nhận mã đơn hàng `"orderCode": "ORD-XXXXXXXX"` (Ví dụ đơn hàng $49.99).
 
----
-
-### Bước 2: Khởi tạo thanh toán (Payment Initiation)
-
-#### Lựa chọn A: Khởi tạo thanh toán qua VNPAY
+### Bước 2: Khởi tạo phiên thanh toán PayPal
 Gửi request `POST http://localhost:8080/api/payments/initiate`:
 ```json
 {
-  "orderCode": "ORD-A1B2C3D4",
-  "paymentGateway": "VNPAY"
+  "orderCode": "ORD-XXXXXXXX",
+  "paymentGateway": "PAYPAL"
 }
 ```
-* Phản hồi trả về:
+
+* Phản hồi thành công từ backend:
 ```json
 {
   "status": "success",
   "message": "Payment initiated successfully",
   "data": {
-    "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=8900000000&vnp_Command=pay...",
-    "gatewayTransactionId": "ORD-A1B2C3D4"
+    "paymentUrl": "https://www.sandbox.paypal.com/checkoutnow?token=75A91283M4791054H",
+    "gatewayTransactionId": "75A91283M4791054H"
   }
 }
 ```
 
-#### Lựa chọn B: Khởi tạo thanh toán qua STRIPE
-Gửi request `POST http://localhost:8080/api/payments/initiate`:
-```json
-{
-  "orderCode": "ORD-A1B2C3D4",
-  "paymentGateway": "STRIPE"
-}
-```
-* Phản hồi trả về:
-```json
-{
-  "status": "success",
-  "message": "Payment initiated successfully",
-  "data": {
-    "paymentUrl": "https://checkout.stripe.com/c/pay/cs_test_...",
-    "gatewayTransactionId": "cs_test_..."
-  }
-}
-```
-
----
-
-### Bước 3: Kiểm thử thực tế trên cổng thanh toán
-
-#### 🇻🇳 3.1. Thanh toán thử nghiệm trên VNPAY Sandbox
-1. Mở `paymentUrl` của VNPAY trên trình duyệt web.
-2. Tại giao diện Cổng thanh toán VNPAY:
-   * **Cách 1: Thẻ ATM & Tài khoản ngân hàng nội địa:**
-     * Chọn ngân hàng: **NCB** (Ngân hàng Quốc Dân).
-     * Số thẻ: `9704198526191432198`
-     * Tên chủ thẻ: `NGUYEN VAN A`
-     * Ngày phát hành: `07/15`
-     * Nhấn **Tiếp tục** ➜ Nhập mã OTP: `123456`
-   * **Cách 2: Thẻ thanh toán quốc tế:**
-     * Chọn loại thẻ: **VISA**
-     * Số thẻ: `4456530000001005`
-     * Tên chủ thẻ: `NGUYEN VAN A`
-     * Ngày hết hạn: `12/26`
-     * Mã CVC/CVV: `123`
-3. Nhấn **Xác nhận thanh toán** ➜ VNPAY xử lý thành công và tự động chuyển hướng về `/api/payments/vnpay-callback` hiển thị giao diện Thành công.
-
-#### 💳 3.2. Thanh toán thử nghiệm trên Stripe Checkout
-1. Mở `paymentUrl` của Stripe trên trình duyệt web.
-2. Nhập thông tin thẻ test của Stripe:
-   * **Số thẻ (Card number):** `4242 4242 4242 4242`
-   * **Hạn dùng (MM/YY):** Bất kỳ tháng/năm nào trong tương lai (Ví dụ: `12 / 29`)
-   * **CVC:** `123`
-   * **Tên chủ thẻ:** Tên bất kỳ (Ví dụ: `JAVABUILDER`)
-3. Nhấn **Pay** ➜ Stripe xử lý và chuyển hướng về `/api/payments/success`.
-
----
-
-## 📚 Tài liệu Tham khảo & Tài nguyên Cổng thanh toán (Chuyên biệt cho Java / Spring Boot)
-
-Dưới đây là tổng hợp đầy đủ các tài liệu hướng dẫn kỹ thuật chính thức, đường dẫn tải code mẫu Java và thông tin môi trường Sandbox phục vụ quá trình tích hợp.
-
-### 🇻🇳 1. Cổng thanh toán VNPAY (VNPAY Payment Gateway)
-
-* **Trang chủ tài liệu kỹ thuật VNPAY:** [https://sandbox.vnpayment.vn/apis/](https://sandbox.vnpayment.vn/apis/)
-* **Hướng dẫn tích hợp thanh toán (Redirect PAY - Bản chuẩn 2.1.0):** [VNPAY Thanh toán PAY Docs](https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html)
-* **API Truy vấn giao dịch (`querydr`) và Hoàn tiền (`refund`):** [API Truy vấn & Hoàn tiền VNPAY](https://sandbox.vnpayment.vn/apis/docs/truy-van-hoan-tien/querydr&refund.html)
-* **Quy chuẩn mã hóa & Chuyển đổi thuật toán (HMAC-SHA512):** [Chuyển đổi thuật toán mã hóa](https://sandbox.vnpayment.vn/apis/docs/chuyen-doi-thuat-toan/changeTypeHash.html)
-* **Danh sách mã Ngân hàng hỗ trợ (Bank Codes):** [Danh sách Ngân hàng VNPAY](https://sandbox.vnpayment.vn/apis/danh-sach-ngan-hang/)
-
-#### 📥 Tải về Mã nguồn Mẫu Java (Java Sample Code)
-* **Code Demo Java chính thức từ VNPAY (JSP / Servlet / Java Config):**
-  * Link tải trực tiếp: [Tải về vnpay_jsp.zip](https://sandbox.vnpayment.vn/apis/files/vnpay_jsp.zip) *(kho lưu trữ chính thức [VNPAY Downloads](https://sandbox.vnpayment.vn/apis/downloads/))*
-  * Cung cấp sẵn mã nguồn mẫu xử lý: Tạo URL thanh toán (`vnp_Command=pay`), Hàm băm `hmacSHA512`, Nhận và xác thực chữ ký số tại `vnp_ReturnUrl` và `vnp_IpnUrl`.
-
-#### 📄 Tài liệu đặc tả kỹ thuật API (Tech Specs PDF)
-* [Đặc tả kỹ thuật THANH TOÁN PAY 2.1.0 (PDF)](https://sandbox.vnpayment.vn/apis/files/VNPAY%20Payment%20Gateway_Techspec%20Post%20method%202.1.0-VN.pdf)
-* [Đặc tả kỹ thuật THANH TOÁN TOKEN 2.1.0 (PDF)](https://sandbox.vnpayment.vn/apis/files/VNPAY%20Payment%20Token_Techspec%202.1.0-VN.pdf)
-* [Đặc tả kỹ thuật THANH TOÁN TRẢ GÓP 2.1.1 (PDF)](https://sandbox.vnpayment.vn/apis/files/VNPAY_Installment_Payment_Techspec_2.1.1_VN.pdf)
-* [Đặc tả kỹ thuật THANH TOÁN ĐỊNH KỲ 2.1.0 (PDF)](https://sandbox.vnpayment.vn/apis/files/VNPAYGW_RecurringPayment_Techspec2.1.0-VN.pdf)
-
-#### 🧪 Môi trường Sandbox & Thông tin Thẻ Test VNPAY
-* **Đăng ký tài khoản Test Sandbox (nhận `vnp_TmnCode` & `vnp_HashSecret`):** [http://sandbox.vnpayment.vn/devreg/](http://sandbox.vnpayment.vn/devreg/)
-* **Kịch bản kiểm thử SIT Testing (Test Cases):** [https://sandbox.vnpayment.vn/vnpaygw-sit-testing](https://sandbox.vnpayment.vn/vnpaygw-sit-testing)
-* **Trang web Demo thanh toán trực tiếp:** [VNPAY Try-it-now Demo](http://sandbox.vnpayment.vn/tryitnow/Home/CreateOrder)
-* **Thẻ ATM Nội địa Test (Ngân hàng NCB):**
-  * **Ngân hàng:** `NCB`
-  * **Số thẻ:** `9704198526191432198`
-  * **Tên chủ thẻ:** `NGUYEN VAN A`
-  * **Ngày phát hành:** `07/15`
-  * **Mã OTP:** `123456`
-* **Thẻ Quốc tế Test (Visa No-3DS):**
-  * **Số thẻ:** `4456530000001005`
-  * **CVC/CVV:** `123`
-  * **Hạn sử dụng:** `12/26`
-  * **Tên chủ thẻ:** `NGUYEN VAN A`
-
----
-
-### 💳 2. Cổng thanh toán Quốc tế Stripe (Stripe for Java)
-
-* **Trang chủ tài liệu Stripe Docs:** [https://stripe.com/docs](https://stripe.com/docs)
-* **Thư viện chính thức Stripe Java SDK (GitHub):** [stripe/stripe-java](https://github.com/stripe/stripe-java)
-* **Tài liệu Stripe Checkout (Prebuilt Checkout Page):** [Stripe Checkout Overview](https://stripe.com/docs/payments/checkout)
-* **Tài liệu API Reference (Ngôn ngữ Java):** [Stripe API Reference - Java](https://stripe.com/docs/api?lang=java)
-* **Xử lý tính bất biến & chống trùng lặp (Idempotency Requests):** [Stripe Idempotent Requests](https://stripe.com/docs/api/idempotent_requests)
-* **Quy chuẩn đơn vị tiền tệ & Zero-decimal currencies:** [Stripe Currencies Guide](https://stripe.com/docs/currencies#zero-decimal)
-* **Xử lý sự kiện Webhook trong Java (Spring Boot Handler):** [Stripe Webhooks Guide](https://stripe.com/docs/webhooks)
-* **Stripe CLI (Kiểm thử & forward webhook localhost):** [Stripe CLI Documentation](https://stripe.com/docs/stripe-cli)
-* **Danh sách thẻ test và mã lỗi mô phỏng (Testing & Test Cards):** [Stripe Testing Guide](https://stripe.com/docs/testing)
-  * **Thẻ thanh toán thành công mặc định:** `4242 4242 4242 4242` (Mọi ngày hết hạn tương lai, CVC bất kỳ).
-  * **Thẻ từ chối (Card Declined):** `4000 0000 0000 0002`
-  * **Thẻ yêu cầu xác thực 3D Secure (3DS Authentication):** `4000 0000 0000 3063`
-
+### Bước 3: Hoàn tất thanh toán trên Sandbox
+1. Mở `paymentUrl` trên trình duyệt.
+2. Đăng nhập bằng tài khoản **Personal Sandbox** (`sb-xxxxxx@personal.example.com`).
+3. Chọn nguồn tiền (Số dư PayPal hoặc Thẻ liên kết) ➜ Bấm **Pay Now**.
+4. PayPal tự động chuyển hướng về `http://localhost:8080/api/payments/success?token=...` và hiển thị giao diện thành công.
